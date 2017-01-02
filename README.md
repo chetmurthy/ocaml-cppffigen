@@ -3,9 +3,23 @@
 This project is a pre-pre-pre-pre alpha release of a C++
 foreign-function-interface generator for Ocaml.  Please use at your own risk.
 
-#### License
+## Installation
 
-This code is released under an Apache 2.0 license </LICENSE>.
+This library requires the oasis build-tool, and the ppx_sexp_conv,
+pcre, sexplib, cmdliner packages.  The easiest way to build is to have
+installed the opam package manager; then it suffices to run:
+
+```
+opam install ppx_sexp_conv sexplib cmdliner pcre
+make inst-all
+```
+
+**NOTE WELL**: the install target is `inst-all` (not `install`)
+  because we need to install additional C++ header files into the
+  ocamlfind directory.
+
+An example of the use of this tool can be found in the
+[ocaml-rocksdb library][ocaml-rocksdb].
 
 ## Why do we need another FFI generator?
 
@@ -56,7 +70,12 @@ before considering this one.
    the memory-ownership rules and semantics of the C++ STL, as
    codified in Google's style guide.
 
+#### License
+
+This code is released under an Apache 2.0 license </LICENSE>.
+
 
 [Google C++ Style Guide]: https://google.github.io/styleguide/cppguide.html
 [orocksdb]: https://github.com/domsj/orocksdb
-
+[/LICENSE]: /LICENSE
+[ocaml-rocksdb][https://github.com/chetmurthy/ocaml-rocksdb]
