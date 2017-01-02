@@ -41,6 +41,7 @@ end
 module Struct = struct
   type t =
     {
+      modname : string ;
       name : string ;
       members : (cpptype * string) list ;
     } [@@deriving sexp]
@@ -114,13 +115,17 @@ let fmt_cpptype ty =
     | PRIM t -> fmt_primcpptype t
   in frec ty
 
-let expand_struct tmap { Struct.name ; members } =
+let expand_struct tmap { Struct.modname; name ; members } =
   [
     ML(PROLOGUE,
-       Printf.sprintf "type %s_t = { %s }\n"
-	 name
-	 (String.concat " "
-	    (List.map (fun (cty,n) -> Printf.sprintf "%s : %s ;" n (ctype2mltype tmap cty)) members))) ;
+       Printf.sprintf "
+module %s = struct
+  type t = { %s\n}
+end
+"
+	 modname
+	 (String.concat ""
+	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (ctype2mltype tmap cty)) members))) ;
     CPP(PROLOGUE,
 	Printf.sprintf "
 #ifndef %s_t_DEFINED
@@ -135,7 +140,7 @@ struct %s_t {\n%s} ;
     TYPEDEF {
       name ;
       cpptype = ID(Printf.sprintf "struct %s_t" name) ;
-      mltype = EXP(Printf.sprintf "%s_t" name) ;
+      mltype = EXP(Printf.sprintf "%s.t" modname) ;
     } ;
     ML2CPP(ID name,
 	   String.concat "\n  "
@@ -280,18 +285,21 @@ let setup_typedecls t =
   | STRUCT t ->
      if List.mem_assoc t.Struct.name !tmap then
        failwith (Printf.sprintf "struct name %s already previously typedef-ed" t.Struct.name) ;
-    push tmap (t.Struct.name, EXP (Printf.sprintf "%s_t" t.Struct.name))
+    push tmap (t.Struct.name, EXP (Printf.sprintf "%s.t" t.Struct.modname))
   | _ -> ()
   ) t.stanzas ;
   !tmap
 
 let gen_typedecls oc tmap =
   let l = tmap in
+  Printf.fprintf oc "module Types = struct\n";
   Printf.fprintf oc "type %s\n"
     (String.concat "\nand " (List.map (function
     | (id, EXP s) -> Printf.sprintf "%s = %s" id s
     | (id, GEN s) ->  s
-     ) l))
+     ) l)) ;
+  Printf.fprintf oc "end\n" ;
+  ()
 
 let gen_stanza tmap oc = function
   | (CPP _|CPP2ML _|ML2CPP _|MLI _) -> ()
@@ -315,6 +323,7 @@ let gen_stanza tmap oc = function
 let gen tmap oc t =
   List.iter (output_string oc) (prologues t) ;
   gen_typedecls oc tmap ;
+  Printf.fprintf oc "open Types\n" ;
   List.iter (gen_stanza tmap oc) t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
   ()

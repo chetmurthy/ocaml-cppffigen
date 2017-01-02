@@ -25,6 +25,7 @@ let print_status st =
     | Some s -> Printf.sprintf \"\\\"%s\\\"\" (String.escaped s)) ;;
 ") ;
     STRUCT Struct.{
+      modname = "Triple" ;
       name = "triple" ;
       members = [
 	(PRIM INT, "a") ;
