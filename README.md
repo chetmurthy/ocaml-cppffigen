@@ -17,7 +17,7 @@ Why do we need another FFI Generator for Ocaml?  Isn't Camlidl enough?  What abo
 
 This is a very fair question, and I can only answer it by telling you
 my reasons for writing this tool.  YMMV, and I surely would suggest
-that you strogly consider using one of the above-mentioned tools,
+that you strongly consider using one of the above-mentioned tools,
 before considering this one.
 
 ### Reasons for using this tool instead of others.
@@ -27,7 +27,7 @@ before considering this one.
    have complex structures requiring a lot of allocation/deallocation.
    And it doesn't deal at all with C++.
    
-2. __What about CTypes?__ This tool's genssis is in my frustration
+2. __What about CTypes?__ This tool's genesis is in my frustration
    with Ctypes.  Ctypes doesn't deal with C++ either.  But originally,
    I was using the [orocksdb][orocksdb] library, and while it worked
    well, I needed to extend it.  `orocksdb` uses Ctypes to interface
@@ -37,7 +37,7 @@ before considering this one.
    of figuring out how to allocate/manage/free C memory from Ocaml
    code.  It seemed really complicated.
    
-3. __C++'s STL is a great ft for Ocaml__ This is the reasl reason for
+3. __C++'s STL is a great fit for Ocaml__ This is the real reason for
    this project: I've been programming C++ for a number of years, and
    the STL types (`std::string`, `std::vector`, etc) are a great fit
    for Ocaml's type-constructors, and the memory-ownership semantics
