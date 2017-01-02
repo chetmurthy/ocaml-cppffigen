@@ -175,7 +175,7 @@ let ctype2mltype tmap cty =
 	failwith (Printf.sprintf "typename %s not found in map" s) ;
       match List.assoc s tmap with
 	GEN s -> s
-      | EXP s -> s
+      | EXP s -> "("^s^")"
     end
     | TYCON("std::vector",[cty]) -> Printf.sprintf "(%s array)" (crec cty)
     | TYCON("std::tuple",[a;b]) -> Printf.sprintf "(%s * %s)"  (crec a) (crec b)
