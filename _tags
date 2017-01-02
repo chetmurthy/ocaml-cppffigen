@@ -1,0 +1,36 @@
+# OASIS_START
+# DO NOT EDIT (digest: 59a231307602318c7e336c0f466c2cc2)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+true: annot, bin_annot
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library cppffigen
+"cppffigen.cmxs": use_cppffigen
+# Executable cppffigen
+"cppffigen.byte": pkg_cmdliner
+"cppffigen.byte": pkg_pcre
+"cppffigen.byte": pkg_ppx_sexp_conv
+"cppffigen.byte": pkg_sexplib
+"cppffigen.byte": use_cppffigen
+# Executable cppffigen_example
+"cppffigen_example.byte": pkg_cmdliner
+"cppffigen_example.byte": pkg_pcre
+"cppffigen_example.byte": pkg_ppx_sexp_conv
+"cppffigen_example.byte": pkg_sexplib
+"cppffigen_example.byte": use_cppffigen
+<*.ml{,i,y}>: pkg_cmdliner
+<*.ml{,i,y}>: pkg_pcre
+<*.ml{,i,y}>: pkg_ppx_sexp_conv
+<*.ml{,i,y}>: pkg_sexplib
+<*.ml{,i,y}>: use_cppffigen
+# OASIS_STOP

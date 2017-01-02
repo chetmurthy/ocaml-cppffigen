@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: 69c6db81f04f3dcffa94e7b916d9e4fa)
+version = "2016-12-30"
+description = "C++ FFI generator"
+requires = "ppx_sexp_conv pcre sexplib cmdliner"
+archive(byte) = "cppffigen.cma"
+archive(byte, plugin) = "cppffigen.cma"
+archive(native) = "cppffigen.cmxa"
+archive(native, plugin) = "cppffigen.cmxs"
+exists_if = "cppffigen.cma"
+# OASIS_STOP
+
