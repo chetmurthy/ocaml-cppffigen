@@ -4,7 +4,13 @@ open Sexplib.Std
 
 let version = "0.001"
 
-type primtype = INT | CHAR | BOOL [@@deriving sexp]
+type primtype =
+  | INT | UINT
+  | INT64 | UINT64
+  | INT32 | UINT32
+  | CHAR | UCHAR
+  | BOOL
+      [@@deriving sexp]
 
 type cpptype =
     PTR of cpptype
@@ -13,7 +19,7 @@ type cpptype =
   | PRIM of primtype [@@deriving sexp]
 
 type mltype =
-    GEN of string
+  | GEN of string
   | EXP of string [@@deriving sexp]
 
 type def_t =
@@ -32,14 +38,25 @@ type t =
   } [@@deriving sexp]
 end
 
+module Struct = struct
+  type t =
+    {
+      name : string ;
+      members : (cpptype * string) list ;
+    } [@@deriving sexp]
+end
+
+type loc = PROLOGUE | EPILOGUE | HERE [@@deriving sexp]
+
 type stanza_t =
   | TYPEDEF of def_t
+  | STRUCT of Struct.t
   | ATTRIBUTE of Attribute.t
   | CPP2ML of cpptype * string
   | ML2CPP of cpptype * string
-  | CPP of string
-  | ML of string
-  | MLI of string
+  | CPP of loc * string
+  | ML of loc * string
+  | MLI of loc * string
   | FOREIGN of cpptype list * string * (cpptype * string) list * string [@@deriving sexp]
 
 let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
@@ -50,34 +67,112 @@ let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
 	     [(ID target), "rcvr"], Printf.sprintf "_res0 = rcvr->%s;" aname)
   ]
 
-type t = {
-  cpp_prologue : string ;
-  cpp_epilogue : string ;
-  ml_prologue : string ;
-  ml_epilogue : string ;
-  mli_prologue : string ;
-  mli_epilogue : string ;
+let prim2mltype = function
+  | (INT | UINT) -> "int"
+  | (INT64 | UINT64) ->"int64"
+  | (INT32 | UINT32) -> "int32"
+  | (CHAR | UCHAR) -> "char"
+  | BOOL -> "bool"
 
-  stanzas : stanza_t  list;
-} [@@deriving sexp]
+let ctype2mltype tmap cty =
+  let rec crec = function
+    | PRIM t -> prim2mltype t
+    | ID "std::string" -> "string"
+    | ID s -> begin
+      if not (List.mem_assoc s tmap) then
+	failwith (Printf.sprintf "typename %s not found in map" s) ;
+      match List.assoc s tmap with
+      | GEN s -> s
+      | EXP s -> "("^s^")"
+    end
+    | TYCON("std::vector",[cty]) -> Printf.sprintf "(%s array)" (crec cty)
+    | TYCON("std::tuple",[a;b]) -> Printf.sprintf "(%s * %s)"  (crec a) (crec b)
+    | TYCON("std::tuple",l) ->
+       Printf.sprintf "(%s)" (String.concat " * " (List.map crec l))
+    | PTR (TYCON("Opt",[cty])) -> Printf.sprintf "(%s option)" (crec cty)
+    | TYCON _ -> failwith "unrecognized C++ type-constructor"
+    | PTR _ -> failwith "cannot map a PTR type to an ML type (should use typedef)"
+  in  crec cty
 
-module CPP = struct
-
+let fmt_primcpptype = function
+  | INT -> "int"
+  | UINT -> "unsigned int"
+  | INT64 -> "int64_t"
+  | UINT64 -> "uint64_t"
+  | INT32 -> "int32_t"
+  | UINT32 -> "uint32_t"
+  | CHAR -> "char"
+  | UCHAR -> "unsigned char"
+  | BOOL -> "bool"
+  
 let fmt_cpptype ty =
   let rec frec = function
     | ID s -> s
     | PTR t -> Printf.sprintf "%s*" (frec t)
     | TYCON (id, l) ->
        Printf.sprintf "%s< %s >" id (String.concat ", " (List.map frec l))
-    | PRIM INT -> "int"
-    | PRIM CHAR -> "char"
-    | PRIM BOOL -> "bool"
+    | PRIM t -> fmt_primcpptype t
   in frec ty
+
+let expand_struct tmap { Struct.name ; members } =
+  [
+    ML(PROLOGUE,
+       Printf.sprintf "type %s_t = { %s }\n"
+	 name
+	 (String.concat " "
+	    (List.map (fun (cty,n) -> Printf.sprintf "%s : %s ;" n (ctype2mltype tmap cty)) members))) ;
+    CPP(PROLOGUE,
+	Printf.sprintf "
+#ifndef %s_t_DEFINED
+#define %s_t_DEFINED
+struct %s_t {\n%s} ;
+#endif
+"
+	  name name
+	  name
+	  (String.concat ""
+	     (List.map (fun (cty, n) -> Printf.sprintf "  %s %s ;\n" (fmt_cpptype cty) n) members))) ;
+    TYPEDEF {
+      name ;
+      cpptype = ID(Printf.sprintf "struct %s_t" name) ;
+      mltype = EXP(Printf.sprintf "%s_t" name) ;
+    } ;
+    ML2CPP(ID name,
+	   String.concat "\n  "
+	     (List.mapi (fun i (cty, n) ->
+	       Printf.sprintf "ml2c(Field(_mlvalue,%d), &(_cvaluep->%s));" i n) members)) ;
+    CPP2ML(ID name,
+	   Printf.sprintf "
+  _mlvalue = caml_alloc(%d, 0) ;
+%s
+"
+	     (List.length members)
+	     (String.concat "\n"
+		(List.mapi (fun i (cty, n) ->
+		  Printf.sprintf "  Store_field(_mlvalue, %d, c2ml(_cvalue.%s));" i n)
+		   members))) ;
+  ]
+
+type t = {
+  stanzas : stanza_t  list;
+} [@@deriving sexp]
+
+module CPP = struct
+
+let prologues t =
+  List.concat (List.map (function
+  | CPP(PROLOGUE, s) -> [s]
+  | _ -> []) t.stanzas)
+
+let epilogues t =
+  List.concat (List.map (function
+  | CPP(EPILOGUE, s) -> [s]
+  | _ -> []) t.stanzas)
 
 let gen_stanza_forwards oc = function
   | (CPP _| ML _ | MLI _| FOREIGN _) -> ()
   | TYPEDEF t ->
-     Printf.fprintf oc "typedef %s %s;\n" (fmt_cpptype t.cpptype) t.name
+     Printf.fprintf oc "typedef %s %s;\n" (fmt_cpptype t.cpptype) t.name ;
   | CPP2ML(cty, _) ->
      Printf.fprintf oc "value c2ml(const %s& _cvalue);\n" (fmt_cpptype cty)
   | ML2CPP(cty, _) ->
@@ -85,7 +180,8 @@ let gen_stanza_forwards oc = function
 
 let gen_stanza_bodies oc = function
   | (ML _ | MLI _| TYPEDEF _) -> ()
-  | CPP s -> output_string oc s
+  | CPP(HERE, s) -> output_string oc s
+  | CPP _  -> ()
   | CPP2ML(cty, body) ->
      Printf.fprintf oc "value c2ml(const %s& _cvalue) {
   CAMLparam0();
@@ -150,7 +246,7 @@ output_string oc "
 #include <caml/custom.h>
 #include <caml/bigarray.h>
 " ;
-  output_string oc t.cpp_prologue ;
+  List.iter (output_string oc) (prologues t) ;
   List.iter (gen_stanza_forwards oc) t.stanzas ;
   output_string oc "
 #include \"cppffi.inc\"
@@ -158,33 +254,21 @@ output_string oc "
   List.iter(fun s ->
     gen_stanza_bodies oc s;
     output_string oc "\n") t.stanzas ;
-  output_string oc t.cpp_epilogue ;
+  List.iter (output_string oc) (epilogues t) ;
   ()
 end
 
 module ML = struct
 
-let ctype2mltype tmap cty =
-  let rec crec = function
-    | PRIM INT -> "int"
-    | PRIM CHAR -> "char"
-    | PRIM BOOL -> "bool"
-    | ID "std::string" -> "string"
-    | ID s -> begin
-      if not (List.mem_assoc s tmap) then
-	failwith (Printf.sprintf "typename %s not found in map" s) ;
-      match List.assoc s tmap with
-	GEN s -> s
-      | EXP s -> "("^s^")"
-    end
-    | TYCON("std::vector",[cty]) -> Printf.sprintf "(%s array)" (crec cty)
-    | TYCON("std::tuple",[a;b]) -> Printf.sprintf "(%s * %s)"  (crec a) (crec b)
-    | TYCON("std::tuple",l) ->
-       Printf.sprintf "(%s)" (String.concat " * " (List.map crec l))
-    | PTR (TYCON("Opt",[cty])) -> Printf.sprintf "(%s option)" (crec cty)
-    | TYCON _ -> failwith "unrecognized C++ type-constructor"
-    | PTR _ -> failwith "cannot map a PTR type to an ML type (should use typedef)"
-  in  crec cty
+let prologues t =
+  List.concat (List.map (function
+  | ML(PROLOGUE, s) -> [s]
+  | _ -> []) t.stanzas)
+
+let epilogues t =
+  List.concat (List.map (function
+  | ML(EPILOGUE, s) -> [s]
+  | _ -> []) t.stanzas)
 
 let setup_typedecls t =
   let tmap = ref [] in
@@ -193,21 +277,27 @@ let setup_typedecls t =
      if List.mem_assoc t.name !tmap then
        failwith (Printf.sprintf "typenae %s already previously typedef-ed" t.name) ;
     push tmap (t.name, t.mltype)
+  | STRUCT t ->
+     if List.mem_assoc t.Struct.name !tmap then
+       failwith (Printf.sprintf "struct name %s already previously typedef-ed" t.Struct.name) ;
+    push tmap (t.Struct.name, EXP (Printf.sprintf "%s_t" t.Struct.name))
   | _ -> ()
   ) t.stanzas ;
-  tmap
+  !tmap
 
 let gen_typedecls oc tmap =
-  let l = !tmap in
+  let l = tmap in
   Printf.fprintf oc "type %s\n"
     (String.concat "\nand " (List.map (function
     | (id, EXP s) -> Printf.sprintf "%s = %s" id s
-    | (id, GEN s) -> s) l))
+    | (id, GEN s) ->  s
+     ) l))
 
 let gen_stanza tmap oc = function
   | (CPP _|CPP2ML _|ML2CPP _|MLI _) -> ()
   | TYPEDEF _ -> ()
-  | ML s -> output_string oc s
+  | ML(HERE, s) -> output_string oc s
+  | ML _ -> ()
   | FOREIGN(rtys, name, argformals, _) ->
      Printf.fprintf oc
        "external %s : %s -> %s\n\t=\"%s\"\n"
@@ -222,29 +312,30 @@ let gen_stanza tmap oc = function
 	  (List.map (ctype2mltype tmap) l))
        name
 
-let gen oc t =
-  let tmap = setup_typedecls t in
-  output_string oc t.ml_prologue ;
+let gen tmap oc t =
+  List.iter (output_string oc) (prologues t) ;
   gen_typedecls oc tmap ;
-  List.iter (gen_stanza !tmap oc) t.stanzas ;
-  output_string oc t.ml_epilogue ;
+  List.iter (gen_stanza tmap oc) t.stanzas ;
+  List.iter (output_string oc) (epilogues t) ;
   ()
 end
 
 open Cmdliner
 
-let expand_attributes t =
+let expand_composite tmap t =
   let expand1 = function
     | ATTRIBUTE t -> expand_attribute t
+    | STRUCT t -> expand_struct tmap t
     | t -> [t] in
   { t with stanzas = List.concat (List.map expand1 t.stanzas) }
 
 let gen_f mode =
   let t = t_of_sexp (Sexplib.Sexp.input_sexp stdin) in
-  let t = expand_attributes t in
+  let tmap = ML.setup_typedecls t in
+  let t = expand_composite tmap t in
   match mode with
   | `CPP -> CPP.gen stdout t
-  | `ML -> ML.gen stdout t
+  | `ML -> ML.gen tmap stdout t
   | `SEXP -> Sexplib.Sexp.output_hum stdout(sexp_of_t t)
 
 let opts_sect = "OPTIONS"

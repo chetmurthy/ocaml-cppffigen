@@ -46,12 +46,26 @@ value c2ml_opt_owned_pointer(const T *& p) {
 }
 
 value c2ml(int v) { return Val_int(v) ; }
+value c2ml(unsigned int v) { return Val_int(v) ; }
 value c2ml(bool v) { return Val_bool(v) ; }
 value c2ml(char v) { return Val_int((int)v) ; }
+value c2ml(unsigned char v) { return Val_int((int)v) ; }
+
+//value c2ml(int32_t v) { return caml_copy_int32(v) ; }
+//value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
+value c2ml(int64_t v) { return caml_copy_int64(v) ; }
+value c2ml(uint64_t v) { return caml_copy_int64(v) ; }
 
 void ml2c(const value v, int *cv) { *cv = Int_val(v) ; }
+void ml2c(const value v, unsigned int *cv) { *cv = Int_val(v) ; }
 void ml2c(const value v, bool *cv) { *cv = Bool_val(v) ; }
 void ml2c(const value v, char *cv) { *cv = (char)Int_val(v) ; }
+void ml2c(const value v, unsigned char *cv) { *cv = (char)Int_val(v) ; }
+
+//void ml2c(const value v, int32_t *cv) { *cv = Int32_val(v) ; }
+//void ml2c(const value v, uint32_t *cv) { *cv = Int32_val(v) ; }
+void ml2c(const value v, int64_t *cv) { *cv = Int64_val(v) ; }
+void ml2c(const value v, uint64_t *cv) { *cv = Int64_val(v) ; }
 
 value c2ml(const std::string& v) {
   uint32_t size = v.size() ;
@@ -118,13 +132,15 @@ value c2ml(const std::vector<T>& v) {
   CAMLreturn(mlv) ;
 }
 
-template<class T>
+template<typename T>
 void ml2c(const value v, std::vector<T>* cv) {
   int n = caml_array_length(v) ;
   cv->clear();
   cv->resize(n) ;
   for(int i = 0 ; i < n ; i++) {
-    ml2c(Field(v, i), &( (*cv)[i] )) ;
+    T tmp ;
+    ml2c(Field(v, i), &tmp) ;
+    (*cv)[i] = tmp ;
   }
 }
 

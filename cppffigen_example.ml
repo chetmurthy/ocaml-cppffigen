@@ -2,7 +2,8 @@
 open Cppffigen
 
 let t = {
-  cpp_prologue = "
+  stanzas = [
+  CPP(PROLOGUE,"
 #include <stdio.h>
 #include <string>
 #include <unistd.h>
@@ -14,20 +15,23 @@ let t = {
 #include \"rocksdb/db.h\"
 #include \"ocaml_rocksdb.inc\"
 #include \"cppffi.h\"
-" ;
+") ;
 
-  cpp_epilogue = "" ;
-  ml_prologue = "
+  ML(PROLOGUE,"
 type status_t = {code : int ; subcode : int ; msg : string option }
 let print_status st =
   Printf.printf \"<%d, %d, %s>\\n\" st.code st.subcode
     (match st.msg with None -> \"<>\"
     | Some s -> Printf.sprintf \"\\\"%s\\\"\" (String.escaped s)) ;;
-" ;
-  ml_epilogue = "" ;
-  mli_prologue = "" ;
-  mli_epilogue = "" ;
-  stanzas = [
+") ;
+    STRUCT Struct.{
+      name = "triple" ;
+      members = [
+	(PRIM INT, "a") ;
+	(ID "std::string", "b") ;
+	(TYCON("std::vector", [PRIM BOOL]), "c") ;
+      ];
+    };
     TYPEDEF{
       name="status";
       cpptype=ID"rocksdb::Status";
@@ -104,7 +108,7 @@ let print_status st =
   ml2c(_mlvalue, &cfd_id) ;
   *_cvaluep = *cfd_id ;") ;
 
-    CPP "
+    CPP(HERE, "
 std::string demarsh_state(const char *state) {
   assert(NULL != state) ;
   uint32_t size;
@@ -112,7 +116,7 @@ std::string demarsh_state(const char *state) {
   const char* body = &(state[4]);
   return std::string(body, size) ;
 }
-" ;
+") ;
     CPP2ML(TYCON("Opt",[PRIM CHAR]),
 	   "
   assert(NULL != _cvalue.it) ;
@@ -160,17 +164,12 @@ std::string demarsh_state(const char *state) {
   _res0 = rocksdb::DB::ListColumnFamilies(*opth, name, &_res1);
   if (!_res0.ok()) _res1.clear() ;
 ") ;
-
   ]
 }
 
 let _ =
   Printexc.catch (fun () ->  
-    if Sys.argv.(1) = "-cpp" then 
-      CPP.gen stdout (expand_attributes t)
-    else if Sys.argv.(1) = "-ml" then
-      ML.gen stdout (expand_attributes t)
-    else if Sys.argv.(1) = "-dump-sexp" then
+    if Sys.argv.(1) = "-dump-sexp" then
       Sexplib.Sexp.output_hum stdout(sexp_of_t t)
     else failwith "unrecognized argument")
     ()

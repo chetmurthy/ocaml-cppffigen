@@ -19,12 +19,27 @@ template<class T>
 value c2ml_opt_owned_pointer(const T *& p);
 
 value c2ml(int v);
+value c2ml(unsigned int v);
 value c2ml(bool v);
 value c2ml(char v);
+value c2ml(unsigned char v);
+
+//TODO: figure out how to re-enable Int32.t
+//value c2ml(int32_t v);
+//value c2ml(uint32_t v);
+value c2ml(int64_t v);
+value c2ml(uint64_t v);
 
 void ml2c(const value v, int *cv);
+void ml2c(const value v, unsigned int *cv);
 void ml2c(const value v, bool *cv);
 void ml2c(const value v, char *cv);
+void ml2c(const value v, unsigned char *cv);
+
+//void ml2c(const value v, int32_t *cv);
+//void ml2c(const value v, uint32_t *cv);
+void ml2c(const value v, int64_t *cv);
+void ml2c(const value v, uint64_t *cv);
 
 value c2ml(const std::string& v);
 
