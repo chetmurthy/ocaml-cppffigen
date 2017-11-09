@@ -19,7 +19,7 @@ make inst-all
   ocamlfind directory.
 
 An example of the use of this tool can be found in the
-[ocaml-rocksdb library](ocaml-rocksdb).
+[ocaml-rocksdb library][ocaml-rocksdb].
 
 ## Why do we need another FFI generator?
 
@@ -78,4 +78,4 @@ This code is released under an Apache 2.0 license </LICENSE>.
 [Google C++ Style Guide]: https://google.github.io/styleguide/cppguide.html
 [orocksdb]: https://github.com/domsj/orocksdb
 [/LICENSE]: /LICENSE
-[ocaml-rocksdb]: https://github.com/chetmurthy/ocaml-rocksdb
+[ocaml-rocksdb]: https://github.com/chetmurthy/ocaml-rocksdb/
