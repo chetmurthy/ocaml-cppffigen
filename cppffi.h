@@ -1,3 +1,7 @@
+#include <string>
+#include <vector>
+#include <tuple>
+
 #ifndef cppffigen_h_included
 #define  cppffigen_h_included
 

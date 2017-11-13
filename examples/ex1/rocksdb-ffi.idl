@@ -10,11 +10,6 @@
 #include <iostream>
 #include <vector>
 
-#include \"rocksdb/comparator.h\"
-#include \"rocksdb/db.h\"
-#include \"rocksdb/iterator.h\"
-#include \"rocksdb/write_batch.h\"
-#include \"ocaml_rocksdb.inc\"
 #include \"somecode.h\"
 #include \"cppffi.h\"
 ")

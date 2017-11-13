@@ -34,3 +34,4 @@ true: annot, bin_annot
 <*.ml{,i,y}>: pkg_sexplib
 <*.ml{,i,y}>: use_cppffigen
 # OASIS_STOP
+"examples": -traverse
