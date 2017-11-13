@@ -126,6 +126,15 @@ end
 	 modname
 	 (String.concat ""
 	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (ctype2mltype tmap cty)) members))) ;
+    MLI(PROLOGUE,
+       Printf.sprintf "
+module %s : sig
+  type t = { %s\n}
+end
+"
+	 modname
+	 (String.concat ""
+	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (ctype2mltype tmap cty)) members))) ;
     CPP(PROLOGUE,
 	Printf.sprintf "
 #ifndef %s_t_DEFINED
@@ -290,9 +299,9 @@ let setup_typedecls t =
   ) t.stanzas ;
   !tmap
 
-let gen_typedecls oc tmap =
+let gen_typedecls ~ml oc tmap =
   let l = tmap in
-  Printf.fprintf oc "module Types = struct\n";
+  Printf.fprintf oc (if ml then "module Types = struct\n" else "module Types : sig\n");
   Printf.fprintf oc "type %s\n"
     (String.concat "\nand " (List.map (function
     | (id, EXP s) -> Printf.sprintf "%s = %s" id s
@@ -322,11 +331,35 @@ let gen_stanza tmap oc = function
 
 let gen tmap oc t =
   List.iter (output_string oc) (prologues t) ;
+  gen_typedecls ~ml:true oc tmap ;
+  Printf.fprintf oc "open Types\n" ;
+  List.iter (gen_stanza tmap oc) t.stanzas ;
+  List.iter (output_string oc) (epilogues t) ;
+  ()
+end
+
+module MLI = struct
+let prologues t =
+  List.concat (List.map (function
+  | MLI(PROLOGUE, s) -> [s]
+  | _ -> []) t.stanzas)
+
+let epilogues t =
+  List.concat (List.map (function
+  | MLI(EPILOGUE, s) -> [s]
+  | _ -> []) t.stanzas)
+
+let gen_typedecls = ML.gen_typedecls ~ml:false
+let gen_stanza = ML.gen_stanza
+    
+  let gen tmap oc t =
+  List.iter (output_string oc) (prologues t) ;
   gen_typedecls oc tmap ;
   Printf.fprintf oc "open Types\n" ;
   List.iter (gen_stanza tmap oc) t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
   ()
+
 end
 
 open Cmdliner
@@ -345,6 +378,7 @@ let gen_f mode =
   match mode with
   | `CPP -> CPP.gen stdout t
   | `ML -> ML.gen tmap stdout t
+  | `MLI -> MLI.gen tmap stdout t
   | `SEXP -> Sexplib.Sexp.output_hum stdout(sexp_of_t t)
 
 let opts_sect = "OPTIONS"
@@ -355,7 +389,7 @@ let gen_cmd =
   let ftype =
     let doc = "output file type (cpp or ml)" in
     let docs = opts_sect in
-    Arg.(value & opt (enum ["cpp",`CPP; "ml", `ML; "sexp", `SEXP]) `CPP & info ["output"] ~docs ~docv:"OUTPUT-FILE-TYPE" ~doc) in
+    Arg.(value & opt (enum ["cpp",`CPP; "ml", `ML; "mli", `MLI; "sexp", `SEXP]) `CPP & info ["output"] ~docs ~docv:"OUTPUT-FILE-TYPE" ~doc) in
   Term.(const gen_f $ ftype),
   Term.info "cppffigen" ~version ~sdocs:opts_sect ~doc ~man
 
