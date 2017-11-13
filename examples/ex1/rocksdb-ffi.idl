@@ -15,6 +15,7 @@
 #include \"rocksdb/iterator.h\"
 #include \"rocksdb/write_batch.h\"
 #include \"ocaml_rocksdb.inc\"
+#include \"somecode.h\"
 #include \"cppffi.h\"
 ")
  (ML PROLOGUE
@@ -127,6 +128,12 @@ std::string demarsh_state(const char *state) {
    (CPP2ML (ID rocksdb::Status)
      "std::string state = _cvalue.ToString() ;
   _mlvalue = c2ml(_cvalue.code(), _cvalue.subcode(), state) ;")
+
+   (FOREIGN
+    ((ID std::string))
+    somecode_foo
+    (((PRIM INT) n))
+     "_res0 = somecode::foo(n); ")
 
    (FOREIGN ((ID cfoptions_id)) rocksdb_cfoptions_create ()
      "_res0 = new rocksdb::ColumnFamilyOptions() ;")

@@ -7,6 +7,9 @@ let canon l = List.sort Pervasives.compare l
 
 let all = "all_tests" >:::
   [
+    "somecode_foo" >::
+      (fun ctxt ->
+	assert_equal "45" (Ocaml_rocksdb.somecode_foo 45)) ;
     "single-free" >::
       (fun ctxt ->
 	let opts = DBOptions.create() in

@@ -32,11 +32,14 @@ OBJECTS = $(CMO) $(CMX) $(CMI)
 
 all: $(RESULT).cma $(RESULT).cmxa dll$(RESULT).so rocks_tests.byte
 
-rocks_tests.byte: $(RESULT).cma rocks_tests.cmo
-	ocamlfind ocamlc -thread -package $(PACKS) -linkpkg -o rocks_tests.byte $(RESULT).cma  rocks_tests.cmo
+test: rocks_tests.byte
+	./rocks_tests.byte
 
-$(RESULT).cma $(RESULT).cmxa dll$(RESULT).so: $(OBJECTS) $(RESULT)_stubs.o
-	    ocamlmklib -verbose -o $(RESULT) $(CMO) $(CMX) $(RESULT)_stubs.o $(OCAMLMKLIB_FLAGS)
+rocks_tests.byte: $(RESULT).cma rocks_tests.cmo
+	ocamlfind ocamlc -custom -thread -package $(PACKS) -linkpkg -linkall -o rocks_tests.byte $(RESULT).cma -cclib -L.  rocks_tests.cmo
+
+$(RESULT).cma $(RESULT).cmxa dll$(RESULT).so: $(OBJECTS) $(RESULT)_stubs.o somecode.o
+	    ocamlmklib -verbose -o $(RESULT) $(CMO) $(CMX) $(RESULT)_stubs.o somecode.o $(OCAMLMKLIB_FLAGS)
 
 rocks_tests.cmo : rocks_tests.ml
 	ocamlfind ocamlc -thread -package $(PACKS) -c -g rocks_tests.ml
@@ -55,6 +58,9 @@ $(RESULT).ml $(RESULT).mli $(RESULT)_stubs.cc: rocksdb-ffi.idl
 
 $(RESULT)_stubs.o: $(RESULT)_stubs.cc
 	g++ -c -fPIC ${CXXFLAGS} -DPIC -o $(RESULT)_stubs.o $(RESULT)_stubs.cc
+
+somecode.o: somecode.cc
+	g++ -c -fPIC ${CXXFLAGS} -DPIC -o $@ $<
 
 clean::
 	rm -f rocks_tests.byte \
