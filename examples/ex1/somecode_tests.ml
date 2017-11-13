@@ -6,7 +6,7 @@ let all = "all_tests" >:::
   [
     "somecode_foo" >::
       (fun ctxt ->
-	assert_equal "45" (Ocaml_rocksdb.somecode_foo 45)) ;
+	assert_equal "45" (Ocaml_somecode.somecode_foo 45)) ;
   ]
   
 (* Run the tests in test suite *)
