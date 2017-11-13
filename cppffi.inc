@@ -1,3 +1,5 @@
+/* these definitions probably need to go, but I'll leave them here
+until I have more tests/examples */
 
 /* by construction, [it] should NEVER be NULL */
 template<class T>

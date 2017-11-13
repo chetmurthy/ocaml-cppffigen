@@ -1,4 +1,10 @@
 
+include $(shell ocamlc -where)/Makefile.config
+PREFIX = $(or $(shell opam config var prefix 2>/dev/null),\
+       $(PREFIX))
+
+CONFIGUREFLAGS = --prefix $(PREFIX)
+
 # OASIS_START
 # DO NOT EDIT (digest: a3c674b4239234cbbe53afe090018954)
 
