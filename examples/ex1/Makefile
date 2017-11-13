@@ -23,8 +23,8 @@ CXXFLAGS += -g2 -I. -I`ocamlfind query cppffigen` -I$(OCAMLLIB) -I$(ROCKS_INSTAL
 
 PACKS = result,threads,core_kernel,oUnit
 
-MLI=rocks_types.mli $(RESULT).mli rocks.mli
-ML= misc.ml rocks_types.ml $(RESULT).ml rocks.ml
+MLI= $(RESULT).mli
+ML=  $(RESULT).ml
 CMO= $(patsubst %.ml,%.cmo, $(ML))
 CMX= $(patsubst %.ml,%.cmx, $(ML))
 CMI= $(patsubst %.ml,%.cmi, $(ML))
