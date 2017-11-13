@@ -1,0 +1,565 @@
+(
+ (stanzas
+ (
+(CPP PROLOGUE
+   "
+#include <stdio.h>
+#include <string>
+#include <unistd.h>
+#include <ostream>
+#include <iostream>
+#include <vector>
+
+#include \"rocksdb/comparator.h\"
+#include \"rocksdb/db.h\"
+#include \"rocksdb/iterator.h\"
+#include \"rocksdb/write_batch.h\"
+#include \"ocaml_rocksdb.inc\"
+#include \"cppffi.h\"
+")
+ (ML PROLOGUE
+   "
+open Rocks_types
+")
+ (MLI PROLOGUE
+   "
+open Rocks_types
+")
+  (TYPEDEF
+  ((mltype (EXP int))
+   (cpptype (ID size_t))
+   (name size_t)))
+
+  (TYPEDEF
+   ((mltype (EXP char)) (cpptype (ID rocksdb::WALRecoveryMode)) (name wal_recovery_mode_t)))
+
+  (CPP2ML (ID wal_recovery_mode_t) "_mlvalue = c2ml(static_cast<int>(_cvalue));")
+  (ML2CPP (ID wal_recovery_mode_t) "{ char xx ; ml2c(_mlvalue, &xx); *_cvaluep = static_cast<rocksdb::WALRecoveryMode>(xx) ; }")
+
+ (TYPEDEF
+    ((mltype (EXP status_t))
+     (cpptype (ID rocksdb::Status))
+     (name status)))
+
+   (TYPEDEF
+    ((mltype (GEN cfhandle_id))
+     (cpptype (PTR (ID rocksdb::ColumnFamilyHandle)))
+     (name cfhandle_id)))
+   (CPP2ML (ID cfhandle_id)
+     "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID cfhandle_id)
+     "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((mltype (GEN db_id)) (cpptype (PTR (ID rocksdb::DB))) (name db_id)))
+   (CPP2ML (ID db_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID db_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((name db_id_opt) (mltype (EXP "db_id option")) (cpptype (PTR (TYCON Opt ((ID rocksdb::DB)))))))
+   (CPP2ML (TYCON Opt ((ID rocksdb::DB)))
+    "
+  assert(NULL != _cvalue.it) ;
+  _mlvalue = c2ml(_cvalue.it) ;
+"
+    )
+
+   (TYPEDEF
+    ((mltype (GEN options_id)) (cpptype (PTR (ID rocksdb::Options)))
+     (name options_id)))
+   (CPP2ML (ID options_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID options_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((mltype (GEN dboptions_id)) (cpptype (PTR (ID rocksdb::DBOptions)))
+     (name dboptions_id)))
+   (CPP2ML (ID dboptions_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID dboptions_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((mltype (GEN cfoptions_id))
+     (cpptype (PTR (ID rocksdb::ColumnFamilyOptions))) (name cfoptions_id)))
+   (CPP2ML (ID cfoptions_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID cfoptions_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((mltype (GEN roptions_id))
+     (cpptype (PTR (ID rocksdb::ReadOptions))) (name roptions_id)))
+   (CPP2ML (ID roptions_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID roptions_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((mltype (GEN woptions_id))
+     (cpptype (PTR (ID rocksdb::WriteOptions))) (name woptions_id)))
+   (CPP2ML (ID woptions_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID woptions_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((mltype (GEN comparator_id)) (cpptype (PTR (ID rocksdb::Comparator)))
+     (name comparator_id)))
+   (CPP2ML (ID comparator_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID comparator_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (TYPEDEF
+    ((name cfd)
+     (mltype (EXP "(string * cfoptions_id)"))
+     (cpptype (ID rocksdb::ColumnFamilyDescriptor))))
+   (ML2CPP (ID cfd)
+     "
+  std::tuple<std::string, cfoptions_id> tmp;
+  ml2c(_mlvalue, &tmp) ;
+  *_cvaluep = rocksdb::ColumnFamilyDescriptor(std::get<0>(tmp), *(std::get<1>(tmp))) ;
+")
+
+   (CPP HERE
+     "
+std::string demarsh_state(const char *state) {
+  assert(NULL != state) ;
+  uint32_t size;
+  memcpy(&size, state, sizeof(size));
+  const char* body = &(state[4]);
+  return std::string(body, size) ;
+}
+")
+   (CPP2ML (TYCON Opt ((PRIM CHAR)))
+     "assert(NULL != _cvalue.it) ;
+  _mlvalue = c2ml(demarsh_state(_cvalue.it)) ;")
+   (CPP2ML (ID rocksdb::Status)
+     "std::string state = _cvalue.ToString() ;
+  _mlvalue = c2ml(_cvalue.code(), _cvalue.subcode(), state) ;")
+
+   (FOREIGN ((ID cfoptions_id)) rocksdb_cfoptions_create ()
+     "_res0 = new rocksdb::ColumnFamilyOptions() ;")
+
+   (FOREIGN () rocksdb_cfoptions_destroy (((ID cfoptions_id) opth))
+     "if (NULL != opth) {
+    delete opth ;
+    ml2c_set_owned_pointer<cfoptions_id>(_mlv_opth, NULL);
+  }
+")
+
+   (FOREIGN ((ID roptions_id)) rocksdb_roptions_create ()
+     "_res0 = new rocksdb::ReadOptions() ;")
+
+   (FOREIGN () rocksdb_roptions_destroy (((ID roptions_id) opth))
+     "if (NULL != opth) {
+    delete opth ;
+    ml2c_set_owned_pointer<roptions_id>(_mlv_opth, NULL);
+  }
+")
+
+   (FOREIGN ((ID woptions_id)) rocksdb_woptions_create ()
+     "_res0 = new rocksdb::WriteOptions() ;")
+
+   (FOREIGN () rocksdb_woptions_destroy (((ID woptions_id) opth))
+     "if (NULL != opth) {
+    delete opth ;
+    ml2c_set_owned_pointer<woptions_id>(_mlv_opth, NULL);
+  }
+")
+   
+   (FOREIGN ((ID dboptions_id)) rocksdb_dboptions_create ()
+     "_res0 = new rocksdb::DBOptions() ;")
+
+   (FOREIGN () rocksdb_dboptions_destroy (((ID dboptions_id) opth))
+     "if (NULL != opth) {
+    delete opth ;
+    ml2c_set_owned_pointer<dboptions_id>(_mlv_opth, NULL);
+  }
+")
+
+   (FOREIGN
+     ((ID status) (TYCON std::vector ((ID std::string))))
+    rocksdb_list_column_families
+    (((ID dboptions_id) opth) ((ID std::string) name))
+     "_res0 = rocksdb::DB::ListColumnFamilies(*opth, name, &_res1);
+  if (!_res0.ok()) _res1.clear() ;")
+
+   (FOREIGN
+    ((ID comparator_id))
+    rocksdb_bytewise_comparator_create ()
+    "_res0 = const_cast<rocksdb::Comparator *>(rocksdb::BytewiseComparator());"
+    )
+
+   (FOREIGN
+    ((ID comparator_id))
+    rocksdb_reverse_bytewise_comparator_create ()
+    "_res0 = const_cast<rocksdb::Comparator *>(rocksdb::ReverseBytewiseComparator());"
+    )
+
+   (FOREIGN
+    ((ID comparator_id))
+    rocksdb_myrocks_comparator_create ()
+    "_res0 = new myrocks::Rdb_pk_comparator() ;"
+    )
+
+   (FOREIGN
+    ((ID comparator_id))
+    rocksdb_rev_myrocks_comparator_create ()
+    "_res0 = new myrocks::Rdb_rev_comparator() ;"
+    )
+
+   (FOREIGN
+    ()
+    rocksdb_cfoptions_set_comparator
+    (((ID cfoptions_id) opth) ((ID comparator_id) cmp))
+    "opth->comparator = cmp;"
+    )
+
+   (FOREIGN ((ID options_id)) rocksdb_options_create ()
+     "_res0 = new rocksdb::Options() ;")
+
+   (FOREIGN () rocksdb_options_destroy (((ID options_id) opth))
+     "if (NULL != opth) {
+    delete opth ;
+    ml2c_set_owned_pointer<options_id>(_mlv_opth, NULL);
+  }
+")
+
+   (FOREIGN
+    ((ID status) (ID db_id_opt))
+    rocksdb_open
+    (((ID options_id) opth) ((ID std::string) name))
+    "rocksdb::DB *out_dbptr = NULL;
+  _res0 = rocksdb::DB::Open(*opth, name, &out_dbptr);
+  if (!_res0.ok()) { out_dbptr = NULL ; }
+  OptWrap<rocksdb::DB> w(out_dbptr);
+  _res1 = w.p();
+")
+
+   (FOREIGN
+    ((ID status) (TYCON std::vector ((ID cfhandle_id))) (ID db_id_opt))
+    rocksdb_open_column_families
+    (((ID dboptions_id) opth) ((ID std::string) name) ((TYCON std::vector ((ID cfd))) cfds))
+    "rocksdb::DB *out_dbptr = NULL;
+  _res0 = rocksdb::DB::Open(*opth, name, cfds, &_res1, &out_dbptr);
+  if (!_res0.ok()) { _res1.clear() ; out_dbptr = NULL ; }
+  OptWrap<rocksdb::DB> w(out_dbptr);
+  _res2 = w.p();
+")
+
+   (FOREIGN
+    ((ID status) (ID db_id_opt))
+    rocksdb_open_for_readonly
+    (((ID options_id) opth) ((ID std::string) name) ((PRIM BOOL) error_if_log_file_exist))
+    "rocksdb::DB *out_dbptr = NULL;
+  _res0 = rocksdb::DB::OpenForReadOnly(*opth, name, &out_dbptr, error_if_log_file_exist);
+  if (!_res0.ok()) { out_dbptr = NULL ; }
+  OptWrap<rocksdb::DB> w(out_dbptr);
+  _res1 = w.p();
+")
+
+   (FOREIGN
+    ((ID status) (TYCON std::vector ((ID cfhandle_id))) (ID db_id_opt))
+    rocksdb_open_column_families_for_readonly
+    (((ID dboptions_id) opth) ((ID std::string) name) ((TYCON std::vector ((ID cfd))) cfds) ((PRIM BOOL) error_if_log_file_exist))
+    "rocksdb::DB *out_dbptr = NULL;
+  _res0 = rocksdb::DB::OpenForReadOnly(*opth, name, cfds, &_res1, &out_dbptr, error_if_log_file_exist);
+  if (!_res0.ok()) { _res1.clear() ; out_dbptr = NULL ; }
+  OptWrap<rocksdb::DB> w(out_dbptr);
+  _res2 = w.p();
+")
+
+   (FOREIGN
+    ((ID status) (ID cfhandle_id))
+    rocksdb_create_column_family
+    (((ID db_id) dbh) ((ID cfoptions_id) opth) ((ID std::string) name))
+    "
+  _res0 = dbh->CreateColumnFamily(*opth, name, &_res1);
+  if (!_res0.ok()) { _res1 = NULL ; }
+")
+
+   (FOREIGN
+    ((ID status))
+    rocksdb_drop_column_family
+    (((ID db_id) dbh) ( (ID cfhandle_id) cfh))
+    "
+  _res0 = dbh->DropColumnFamily(cfh);
+")
+
+   (FOREIGN
+    ((ID status))
+    rocksdb_cfhandle_destroy
+    (((ID db_id) dbh) ((ID cfhandle_id) cfh))
+    "_res0 = dbh->DestroyColumnFamilyHandle(cfh);"
+    )
+
+   (FOREIGN
+    ()
+    rocksdb_db_destroy
+    (((ID db_id) dbh))
+    "if (NULL != dbh) {
+    delete dbh ;
+    ml2c_set_owned_pointer<db_id>(_mlv_dbh, NULL);
+  }
+"
+    )
+
+   (ATTRIBUTE
+    ((target dboptions_id) (aname create_if_missing) (fprefix rocksdb_) (cpptype (PRIM BOOL))))
+
+   (ATTRIBUTE
+    ((target options_id) (aname create_if_missing) (fprefix rocksdb_) (cpptype (PRIM BOOL))))
+
+   (TYPEDEF
+    ((mltype (GEN iterator_id))
+     (cpptype (PTR (ID rocksdb::Iterator))) (name iterator_id)))
+   (CPP2ML (ID iterator_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID iterator_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (FOREIGN ((ID iterator_id))
+    rocksdb_iterator_create
+    (((ID db_id) dbh) ((ID roptions_id) ropth))
+     "_res0 = dbh->NewIterator(*ropth) ;")
+
+   (FOREIGN ((ID iterator_id))
+    rocksdb_iterator_cf_create
+    (((ID db_id) dbh) ((ID roptions_id) ropth) ((ID cfhandle_id) cfh))
+     "_res0 = dbh->NewIterator(*ropth, cfh) ;")
+
+   (FOREIGN () rocksdb_iterator_destroy (((ID iterator_id) ith))
+     "if (NULL != ith) {
+    delete ith ;
+    ml2c_set_owned_pointer<iterator_id>(_mlv_ith, NULL);
+  }
+")
+
+   (FOREIGN ((PRIM BOOL))
+    rocksdb_iter_valid
+    (((ID iterator_id) ith))
+    "_res0 = ith->Valid();"
+    )
+
+   (FOREIGN ()
+    rocksdb_iter_seek_to_first
+    (((ID iterator_id) ith))
+    "ith->SeekToFirst();"
+    )
+
+   (FOREIGN ()
+    rocksdb_iter_seek_to_last
+    (((ID iterator_id) ith))
+    "ith->SeekToLast();"
+    )
+
+   (FOREIGN ()
+    rocksdb_iter_seek
+    (((ID iterator_id) ith) ((ID "std::string") target))
+    "ith->Seek(target);"
+    )
+
+   (FOREIGN ()
+    rocksdb_iter_seek_for_prev
+    (((ID iterator_id) ith) ((ID "std::string") target))
+    "ith->SeekForPrev(target);"
+    )
+
+   (FOREIGN ()
+    rocksdb_iter_next
+    (((ID iterator_id) ith))
+    "ith->Next();"
+    )
+
+   (FOREIGN ()
+    rocksdb_iter_prev
+    (((ID iterator_id) ith))
+    "ith->Prev();"
+    )
+
+   (FOREIGN ((ID "std::string"))
+    rocksdb_iter_key
+    (((ID iterator_id) ith))
+    "_res0 = ith->key().ToString();"
+    )
+
+   (FOREIGN ((ID "std::string"))
+    rocksdb_iter_value
+    (((ID iterator_id) ith))
+    "_res0 = ith->value().ToString();"
+    )
+
+   (FOREIGN ((ID status))
+    rocksdb_iter_status
+    (((ID iterator_id) ith))
+    "_res0 = ith->status();"
+    )
+
+
+   (TYPEDEF
+    ((mltype (GEN writebatch_id))
+     (cpptype (PTR (ID rocksdb::WriteBatch))) (name writebatch_id)))
+   (CPP2ML (ID writebatch_id) "_mlvalue = c2ml_owned_pointer(_cvalue);")
+   (ML2CPP (ID writebatch_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+   (FOREIGN ((ID writebatch_id)) rocksdb_writebatch_create ()
+     "_res0 = new rocksdb::WriteBatch() ;")
+
+   (FOREIGN () rocksdb_writebatch_destroy (((ID writebatch_id) opth))
+     "if (NULL != opth) {
+    delete opth ;
+    ml2c_set_owned_pointer<writebatch_id>(_mlv_opth, NULL);
+  }
+")
+
+   (FOREIGN ()
+    rocksdb_writebatch_put
+    (((ID writebatch_id) wbh) ((ID "std::string") key) ((ID "std::string") values))
+    "wbh->Put(key, values);"
+    )
+
+   (FOREIGN ()
+    rocksdb_writebatch_cf_put
+    (((ID writebatch_id) wbh) ((ID cfhandle_id) cfh) ((ID "std::string") key) ((ID "std::string") values))
+    "wbh->Put(cfh, key, values);"
+    )
+
+   (FOREIGN ()
+    rocksdb_writebatch_delete
+    (((ID writebatch_id) wbh) ((ID "std::string") key))
+    "wbh->Delete(key);"
+    )
+
+   (FOREIGN ()
+    rocksdb_writebatch_cf_delete
+    (((ID writebatch_id) wbh) ((ID cfhandle_id) cfh) ((ID "std::string") key))
+    "wbh->Delete(cfh, key);"
+    )
+
+
+   (FOREIGN ()
+    rocksdb_writebatch_delete_range
+    (((ID writebatch_id) wbh) ((ID "std::string") bkey) ((ID "std::string") ekey))
+    "wbh->DeleteRange(bkey, ekey);"
+    )
+
+   (FOREIGN ()
+    rocksdb_writebatch_cf_delete_range
+    (((ID writebatch_id) wbh) ((ID cfhandle_id) cfh) ((ID "std::string") bkey) ((ID "std::string") ekey))
+    "wbh->DeleteRange(cfh, bkey, ekey);"
+    )
+
+   
+   (FOREIGN ()
+    rocksdb_writebatch_single_delete
+    (((ID writebatch_id) wbh) ((ID "std::string") key))
+    "wbh->SingleDelete(key);"
+    )
+
+   (FOREIGN ()
+    rocksdb_writebatch_cf_single_delete
+    (((ID writebatch_id) wbh) ((ID cfhandle_id) cfh) ((ID "std::string") key))
+    "wbh->SingleDelete(cfh, key);"
+    )
+
+   (FOREIGN ((ID status))
+    rocksdb_write
+    (((ID db_id) dbh) ((ID woptions_id) opth) ((ID writebatch_id) wbh))
+     "_res0 = dbh->Write(*opth, wbh) ;")
+
+   (FOREIGN ((ID status) (ID "std::string"))
+    rocksdb_get
+    (((ID db_id) dbh) ((ID roptions_id) opth) ((ID "std::string") key))
+     "_res0 = dbh->Get(*opth, key, &_res1) ;")
+
+   (FOREIGN ((ID status) (ID "std::string"))
+    rocksdb_cf_get
+    (((ID db_id) dbh) ((ID roptions_id) opth) ((ID cfhandle_id) cfh) ((ID "std::string") key))
+     "_res0 = dbh->Get(*opth, cfh, key, &_res1) ;")
+
+   (FOREIGN ((ID status))
+    rocksdb_put
+    (((ID db_id) dbh) ((ID woptions_id) opth) ((ID "std::string") key) ((ID "std::string") val))
+     "_res0 = dbh->Put(*opth, key, val) ;")
+
+   (FOREIGN ((ID status))
+    rocksdb_cf_put
+    (((ID db_id) dbh) ((ID woptions_id) opth) ((ID cfhandle_id) cfh) ((ID "std::string") key) ((ID "std::string") val))
+     "_res0 = dbh->Put(*opth, cfh, key, val) ;")
+
+   (FOREIGN ((ID status))
+    rocksdb_delete
+    (((ID db_id) dbh) ((ID woptions_id) opth) ((ID "std::string") key))
+     "_res0 = dbh->Delete(*opth, key) ;")
+
+   (FOREIGN ((ID status))
+    rocksdb_cf_delete
+    (((ID db_id) dbh) ((ID woptions_id) opth) ((ID cfhandle_id) cfh) ((ID "std::string") key))
+     "_res0 = dbh->Delete(*opth, cfh, key) ;")
+
+    (STRUCT
+     ((modname DBOptionsST)
+      (name dboptions)
+      (members
+       (
+	((PRIM BOOL) create_if_missing)
+	((PRIM BOOL) create_missing_column_families)
+	((PRIM BOOL) error_if_exists)
+	((PRIM BOOL) paranoid_checks)
+	((PRIM UCHAR) info_log_level)
+	((PRIM INT) max_open_files)
+	((PRIM INT) max_file_opening_threads)
+	((PRIM UINT64) max_total_wal_size)
+	((PRIM BOOL) use_fsync)
+	((ID std::string) db_log_dir)
+	((ID std::string) wal_dir)
+	((PRIM UINT64) delete_obsolete_files_period_micros)
+	((PRIM INT) max_background_jobs)
+	((PRIM INT) base_background_compactions)
+	((PRIM INT) max_background_compactions)
+	((PRIM UINT32) max_subcompactions)
+	((PRIM INT) max_background_flushes)
+	((ID size_t) max_log_file_size)
+	((ID size_t) log_file_time_to_roll)
+	((ID size_t) keep_log_file_num)
+	((ID size_t) recycle_log_file_num)
+	((PRIM UINT64) max_manifest_file_size)
+	((PRIM INT) table_cache_numshardbits)
+	((PRIM UINT64) _WAL_ttl_seconds)
+	((PRIM UINT64) _WAL_size_limit_MB)
+	((ID size_t) manifest_preallocation_size)
+	((PRIM BOOL) allow_mmap_reads)
+	((PRIM BOOL) allow_mmap_writes)
+	((PRIM BOOL) use_direct_reads)
+	((PRIM BOOL) use_direct_io_for_flush_and_compaction)
+	((PRIM BOOL) allow_fallocate)
+	((PRIM BOOL) is_fd_close_on_exec)
+	((PRIM BOOL) skip_log_error_on_recovery)
+	((PRIM UINT) stats_dump_period_sec)
+	((PRIM BOOL) advise_random_on_open)
+	((ID size_t) db_write_buffer_size)
+	((PRIM INT) access_hint_on_compaction_start)
+	((PRIM BOOL) new_table_reader_for_compaction_inputs)
+	((ID size_t) compaction_readahead_size)
+	((ID size_t) random_access_max_buffer_size)
+	((ID size_t) writable_file_max_buffer_size)
+	((PRIM BOOL) use_adaptive_mutex)
+	((PRIM UINT64) bytes_per_sync)
+	((PRIM UINT64) wal_bytes_per_sync)
+	((PRIM BOOL) enable_thread_tracking)
+	((PRIM UINT64) delayed_write_rate)
+	((PRIM BOOL) enable_pipelined_write)
+	((PRIM BOOL) allow_concurrent_memtable_write)
+	((PRIM BOOL) enable_write_thread_adaptive_yield)
+	((PRIM UINT64) write_thread_max_yield_usec)
+	((PRIM UINT64) write_thread_slow_yield_usec)
+	((PRIM BOOL) skip_stats_update_on_db_open)
+	((PRIM CHAR) wal_recovery_mode)
+	((PRIM BOOL) allow_2pc)
+	((PRIM BOOL) fail_if_options_file_error)
+	((PRIM BOOL) dump_malloc_stats)
+	((PRIM BOOL) avoid_flush_during_recovery)
+	((PRIM BOOL) avoid_flush_during_shutdown)
+	((PRIM BOOL) allow_ingest_behind)
+	((PRIM BOOL) concurrent_prepare)
+	((PRIM BOOL) manual_wal_flush)
+	))))
+
+    (FOREIGN ((ID dboptions))
+     rocksdb_export_dboptions
+     (((ID dboptions_id) opth))
+     " _res0 = dboptions_t(*opth) ;"
+     )
+
+   )
+  )
+ )
