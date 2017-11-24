@@ -6,10 +6,10 @@ RESULT=ocaml_somecode
 
 CXXFLAGS += -g2 -I. -I`ocamlfind query cppffigen` -I$(OCAMLLIB) -std=gnu++11 -fno-rtti
 
-PACKS = result,threads,core_kernel,oUnit
+PACKS = result,threads,oUnit
 
 MLI= $(RESULT).mli
-ML=  $(RESULT).ml
+ML=  $(RESULT).ml some_code.ml
 CMO= $(patsubst %.ml,%.cmo, $(ML))
 CMX= $(patsubst %.ml,%.cmx, $(ML))
 CMI= $(patsubst %.ml,%.cmi, $(ML))
@@ -27,11 +27,11 @@ $(RESULT).cma $(RESULT).cmxa dll$(RESULT).so: $(OBJECTS) $(RESULT)_stubs.o somec
 	    ocamlmklib -verbose -o $(RESULT) $(CMO) $(CMX) $(RESULT)_stubs.o somecode.o $(OCAMLMKLIB_FLAGS)
 
 somecode_tests.cmo : somecode_tests.ml
-	ocamlfind ocamlc -thread -package $(PACKS) -c -g somecode_tests.ml
+	ocamlfind ocamlc -thread -package $(PACKS) -c somecode_tests.ml
 
 $(CMO) $(CMI): $(ML)
-	ocamlfind ocamlc -thread -package $(PACKS) -c -g $(MLI)
-	ocamlfind ocamlc -thread -package $(PACKS) -c -g $(ML)
+	ocamlfind ocamlc -thread -package $(PACKS) -c $(MLI)
+	ocamlfind ocamlc -thread -package $(PACKS) -c $(ML)
 
 $(CMX): $(ML) $(CMI)
 	ocamlfind ocamlopt -thread -package $(PACKS) -c $(ML)
