@@ -4,3 +4,7 @@ setup.data
 _build
 *.byte
 *.native
+*.a
+*.o
+*.cm*
+*.so

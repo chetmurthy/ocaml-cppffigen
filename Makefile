@@ -47,5 +47,6 @@ configure:
 
 # OASIS_STOP
 
-inst-all: install
-	cp cppffi.inc cppffi.h `ocamlfind query cppffigen`
+inst-all: configure all install
+	cp cppffi.inc `ocamlfind query cppffigen`
+	cp cppffi.h `ocamlfind query cppffigen`

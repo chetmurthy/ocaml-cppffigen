@@ -10,7 +10,7 @@ pcre, sexplib, cmdliner packages.  The easiest way to build is to have
 installed the opam package manager; then it suffices to run:
 
 ```
-opam install ppx_sexp_conv sexplib cmdliner pcre
+opam install oasis ocamlbuild ppx_deriving ppx_sexp_conv sexplib cmdliner pcre ounit
 make inst-all
 ```
 
