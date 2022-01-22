@@ -72,7 +72,7 @@ void ml2c(const value v, uint64_t *cv) { *cv = Int64_val(v) ; }
 value c2ml(const std::string& v) {
   uint32_t size = v.size() ;
   value res = caml_alloc_string(size);
-  memmove(String_val(res), v.c_str(), size);
+  memmove((void *)String_val(res), (const void *)v.c_str(), size);
   return res ;
 }
 
