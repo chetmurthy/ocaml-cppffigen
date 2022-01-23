@@ -4,7 +4,7 @@ OCAMLMKLIB_FLAGS= -lstdc++
 
 RESULT=ocaml_somecode
 
-CXXFLAGS += -g2 -I. -I`ocamlfind query cppffigen` -I$(OCAMLLIB) -std=gnu++11 -fno-rtti
+CXXFLAGS += -g2 -I. -I../.. -I$(OCAMLLIB) -std=gnu++11 -fno-rtti
 
 PACKS = result,threads,oUnit
 
@@ -38,9 +38,9 @@ $(CMX): $(ML) $(CMI)
 	ocamlfind ocamlopt -thread -package $(PACKS) -c $(ML)
 
 $(RESULT).ml $(RESULT).mli $(RESULT)_stubs.cc: somecode-ffi.idl
-	ocamlfind cppffigen/cppffigen --output ml < somecode-ffi.idl > $(RESULT).ml
-	ocamlfind cppffigen/cppffigen --output mli < somecode-ffi.idl > $(RESULT).mli
-	ocamlfind cppffigen/cppffigen --output cpp < somecode-ffi.idl > $(RESULT)_stubs.cc
+	../../cppffigen --output ml < somecode-ffi.idl > $(RESULT).ml
+	../../cppffigen --output mli < somecode-ffi.idl > $(RESULT).mli
+	../../cppffigen --output cpp < somecode-ffi.idl > $(RESULT)_stubs.cc
 
 $(RESULT)_stubs.o: $(RESULT)_stubs.cc
 	g++ -c -fPIC ${CXXFLAGS} -DPIC -o $(RESULT)_stubs.o $(RESULT)_stubs.cc
