@@ -18,6 +18,7 @@ OBJECTS = $(CMO) $(CMX) $(CMI)
 all: $(RESULT).cma $(RESULT).cmxa dll$(RESULT).so somecode_tests.byte
 
 test: somecode_tests.byte
+	mkdir -p _build
 	./somecode_tests.byte
 
 somecode_tests.byte: $(RESULT).cma somecode_tests.cmo
@@ -37,9 +38,9 @@ $(CMX): $(ML) $(CMI)
 	ocamlfind ocamlopt -thread -package $(PACKS) -c $(ML)
 
 $(RESULT).ml $(RESULT).mli $(RESULT)_stubs.cc: somecode-ffi.idl
-	cppffigen --output ml < somecode-ffi.idl > $(RESULT).ml
-	cppffigen --output mli < somecode-ffi.idl > $(RESULT).mli
-	cppffigen --output cpp < somecode-ffi.idl > $(RESULT)_stubs.cc
+	ocamlfind cppffigen/cppffigen --output ml < somecode-ffi.idl > $(RESULT).ml
+	ocamlfind cppffigen/cppffigen --output mli < somecode-ffi.idl > $(RESULT).mli
+	ocamlfind cppffigen/cppffigen --output cpp < somecode-ffi.idl > $(RESULT)_stubs.cc
 
 $(RESULT)_stubs.o: $(RESULT)_stubs.cc
 	g++ -c -fPIC ${CXXFLAGS} -DPIC -o $(RESULT)_stubs.o $(RESULT)_stubs.cc
@@ -49,6 +50,6 @@ somecode.o: somecode.cc
 
 clean::
 	rm -f somecode_tests.byte \
-		META *.a *.cma *.cmi *.cmo *.cmx *.cmxa *.o *.so \
+		META *.a *.cma *.cmi *.cmo *.cmx *.cmxa *.o *.so *.log *.cache \
 		$(RESULT).ml $(RESULT).mli $(RESULT).top \
 		$(RESULT)_stubs.c $(RESULT)_stubs.c.ORIG $(RESULT)_stubs.cc

@@ -1,6 +1,8 @@
-open Misc
 open Sexplib
 open Sexplib.Std
+
+let third3 (a,b,c)  = c
+let push l x = (l := x :: !l)
 
 let version = "0.001"
 
@@ -361,43 +363,3 @@ let gen_stanza = ML.gen_stanza
   ()
 
 end
-
-open Cmdliner
-
-let expand_composite tmap t =
-  let expand1 = function
-    | ATTRIBUTE t -> expand_attribute t
-    | STRUCT t -> expand_struct tmap t
-    | t -> [t] in
-  { t with stanzas = List.concat (List.map expand1 t.stanzas) }
-
-let gen_f mode =
-  let t = t_of_sexp (Sexplib.Sexp.input_sexp stdin) in
-  let tmap = ML.setup_typedecls t in
-  let t = expand_composite tmap t in
-  match mode with
-  | `CPP -> CPP.gen stdout t
-  | `ML -> ML.gen tmap stdout t
-  | `MLI -> MLI.gen tmap stdout t
-  | `SEXP -> Sexplib.Sexp.output_hum stdout(sexp_of_t t)
-
-let opts_sect = "OPTIONS"
-
-let gen_cmd =
-  let doc = "C++ FFI generator" in
-  let man = [] in
-  let ftype =
-    let doc = "output file type (cpp or ml)" in
-    let docs = opts_sect in
-    Arg.(value & opt (enum ["cpp",`CPP; "ml", `ML; "mli", `MLI; "sexp", `SEXP]) `CPP & info ["output"] ~docs ~docv:"OUTPUT-FILE-TYPE" ~doc) in
-  Term.(const gen_f $ ftype),
-  Term.info "cppffigen" ~version ~sdocs:opts_sect ~doc ~man
-
-let main () =
-  match Term.eval ~catch:true gen_cmd with
-  | `Error _ -> exit 1 | _ -> exit 0
-;;
-
-if invoked_with "cppffigen" then
-  main()
-;;

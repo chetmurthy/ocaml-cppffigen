@@ -1,52 +1,19 @@
 
-include $(shell ocamlc -where)/Makefile.config
-PREFIX = $(or $(shell opam config var prefix 2>/dev/null),\
-       $(PREFIX))
+all: cppffigen cppffigen_example
 
-CONFIGUREFLAGS = --prefix $(PREFIX)
+cppffigen: cppffigen.ml cppffigen_main.ml
+	ocamlfind ocamlc -package ppx_sexp_conv,pcre,sexplib,cmdliner -linkall -linkpkg -o cppffigen $^
 
-# OASIS_START
-# DO NOT EDIT (digest: a3c674b4239234cbbe53afe090018954)
+cppffigen_example: cppffigen.ml cppffigen_example.ml
+	ocamlfind ocamlc -package ppx_sexp_conv,pcre,sexplib,cmdliner -linkall -linkpkg -o cppffigen_example $^
 
-SETUP = ocaml setup.ml
 
-build: setup.data
-	$(SETUP) -build $(BUILDFLAGS)
+clean::
+	rm -f *.cm* cppffigen cppffigen_example
 
-doc: setup.data build
-	$(SETUP) -doc $(DOCFLAGS)
+install: all
+	ocamlfind install cppffigen META cppffigen cppffi.inc cppffi.h
 
-test: setup.data build
-	$(SETUP) -test $(TESTFLAGS)
+uninstall::
+	ocamlfind remove cppffigen
 
-all:
-	$(SETUP) -all $(ALLFLAGS)
-
-install: setup.data
-	$(SETUP) -install $(INSTALLFLAGS)
-
-uninstall: setup.data
-	$(SETUP) -uninstall $(UNINSTALLFLAGS)
-
-reinstall: setup.data
-	$(SETUP) -reinstall $(REINSTALLFLAGS)
-
-clean:
-	$(SETUP) -clean $(CLEANFLAGS)
-
-distclean:
-	$(SETUP) -distclean $(DISTCLEANFLAGS)
-
-setup.data:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
-
-configure:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
-
-.PHONY: build doc test all install uninstall reinstall clean distclean configure
-
-# OASIS_STOP
-
-inst-all: configure all install
-	cp cppffi.inc `ocamlfind query cppffigen`
-	cp cppffi.h `ocamlfind query cppffigen`
