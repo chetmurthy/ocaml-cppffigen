@@ -8,3 +8,5 @@ _build
 *.o
 *.cm*
 *.so
+cppffigen
+cppffigen_example
