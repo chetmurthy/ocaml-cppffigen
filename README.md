@@ -5,18 +5,14 @@ foreign-function-interface generator for Ocaml.  Please use at your own risk.
 
 ## Installation
 
-This library requires the oasis build-tool, and the ppx_sexp_conv,
+This library requires ppx_sexp_conv,
 pcre, sexplib, cmdliner packages.  The easiest way to build is to have
 installed the opam package manager; then it suffices to run:
 
 ```
-opam install oasis ocamlbuild ppx_deriving ppx_sexp_conv sexplib cmdliner pcre ounit
-make inst-all
+opam install ppx_deriving ppx_sexp_conv sexplib cmdliner pcre ounit
+make all install
 ```
-
-**NOTE WELL**: the install target is `inst-all` (not `install`)
-  because we need to install additional C++ header files into the
-  ocamlfind directory.
 
 An example of the use of this tool can be found in the
 [ocaml-rocksdb library][ocaml-rocksdb].
