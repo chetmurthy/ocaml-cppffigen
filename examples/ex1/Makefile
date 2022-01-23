@@ -49,7 +49,7 @@ somecode.o: somecode.cc
 	g++ -c -fPIC ${CXXFLAGS} -DPIC -o $@ $<
 
 clean::
-	rm -f somecode_tests.byte \
-		META *.a *.cma *.cmi *.cmo *.cmx *.cmxa *.o *.so *.log *.cache \
+	rm -rf somecode_tests.byte \
+		META *.a *.cma *.cmi *.cmo *.cmx *.cmxa *.o *.so *.log *.cache _build \
 		$(RESULT).ml $(RESULT).mli $(RESULT).top \
 		$(RESULT)_stubs.c $(RESULT)_stubs.c.ORIG $(RESULT)_stubs.cc

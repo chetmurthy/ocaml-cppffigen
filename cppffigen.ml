@@ -4,7 +4,7 @@ open Sexplib.Std
 let third3 (a,b,c)  = c
 let push l x = (l := x :: !l)
 
-let version = "0.001"
+let version = "0.002"
 
 type primtype =
   | INT | UINT
