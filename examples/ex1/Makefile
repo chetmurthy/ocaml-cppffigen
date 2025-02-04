@@ -15,7 +15,7 @@ CMX= $(patsubst %.ml,%.cmx, $(ML))
 CMI= $(patsubst %.ml,%.cmi, $(ML))
 OBJECTS = $(CMO) $(CMX) $(CMI)
 
-all: $(RESULT).cma $(RESULT).cmxa dll$(RESULT).so somecode_tests.byte
+all: $(RESULT).cma $(RESULT).cmxa dll$(RESULT).so somecode_tests.byte somecode_tests.opt
 
 test: somecode_tests.byte
 	mkdir -p _build
@@ -24,11 +24,17 @@ test: somecode_tests.byte
 somecode_tests.byte: $(RESULT).cma somecode_tests.cmo
 	ocamlfind ocamlc -custom -thread -package $(PACKS) -linkpkg -linkall -o somecode_tests.byte $(RESULT).cma -cclib -L.  somecode_tests.cmo
 
+somecode_tests.opt: $(RESULT).cmxa somecode_tests.cmx
+	ocamlfind ocamlopt -thread -package $(PACKS) -linkpkg -linkall -o somecode_tests.opt $(RESULT).cmxa -cclib -L.  somecode_tests.cmx
+
 $(RESULT).cma $(RESULT).cmxa dll$(RESULT).so: $(OBJECTS) $(RESULT)_stubs.o somecode.o
 	    ocamlmklib -verbose -o $(RESULT) $(CMO) $(CMX) $(RESULT)_stubs.o somecode.o $(OCAMLMKLIB_FLAGS)
 
 somecode_tests.cmo : somecode_tests.ml
 	ocamlfind ocamlc -thread -package $(PACKS) -c somecode_tests.ml
+
+somecode_tests.cmx : somecode_tests.ml
+	ocamlfind ocamlopt -thread -package $(PACKS) -c somecode_tests.ml
 
 $(CMO) $(CMI): $(ML)
 	ocamlfind ocamlc -thread -package $(PACKS) -c $(MLI)
@@ -49,7 +55,7 @@ somecode.o: somecode.cc
 	g++ -c -fPIC ${CXXFLAGS} -DPIC -o $@ $<
 
 clean::
-	rm -rf somecode_tests.byte \
+	rm -rf somecode_tests.byte somecode_tests.opt \
 		META *.a *.cma *.cmi *.cmo *.cmx *.cmxa *.o *.so *.log *.cache _build \
 		$(RESULT).ml $(RESULT).mli $(RESULT).top \
 		$(RESULT)_stubs.c $(RESULT)_stubs.c.ORIG $(RESULT)_stubs.cc

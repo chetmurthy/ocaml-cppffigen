@@ -3,7 +3,7 @@ setup.data
 *.ml*lib
 _build
 *.byte
-*.native
+*.opt
 *.a
 *.o
 *.cm*
