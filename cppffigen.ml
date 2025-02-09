@@ -1,6 +1,8 @@
 open Sexplib
 open Sexplib.Std
 
+let fst3 (a,b,c)  = a
+let snd3 (a,b,c)  = b
 let third3 (a,b,c)  = c
 let push l x = (l := x :: !l)
 
@@ -194,6 +196,16 @@ let gen_stanza_forwards oc = function
   | ML2CPP(cty, _) ->
      Printf.fprintf oc "void ml2c(const value _mlvalue, %s *_cvaluep);\n" (fmt_cpptype cty)
 
+let arg_snippets (cty, cid) =
+  let formal_varname = Printf.sprintf "__mlv_%s" cid in
+  let argdecl = Printf.sprintf "value %s" formal_varname in
+  let structname = Printf.sprintf "_mlv_%s" cid in
+  let refname = Printf.sprintf "_mlv_%s_m" cid in
+  let decls = Printf.sprintf
+ {|value_%s %s(%s) ;
+  value& %s = %s.m_v ;|} "INT" structname formal_varname refname structname in
+  (argdecl, decls, refname)
+
 let gen_stanza_bodies oc = function
   | (ML _ | MLI _| TYPEDEF _) -> ()
   | CPP(HERE, s) -> output_string oc s
@@ -213,13 +225,20 @@ let gen_stanza_bodies oc = function
 "
        (fmt_cpptype cty) body
   | FOREIGN(rtys, fname, argformals, body) ->
+     let converted_l = List.map arg_snippets argformals in
+     let argdecl_l = List.map fst3 converted_l in
+     let decls_l = List.map snd3 converted_l in
+     let param_l = List.map third3 converted_l in
      let args = List.map (fun (cty,cid) ->
        (cty, cid, Printf.sprintf "_mlv_%s" cid)
      ) argformals in
      Printf.fprintf oc
 "extern \"C\" value %s(%s) {
+  %s
   CAMLparam%d(%s);
-  CAMLlocal1(_mlv_res) ;
+  value_INT _mlv_res(Val_unit) ;
+  value& _mlv_res_m = _mlv_res.m_v ;
+  CAMLxparam1 (_mlv_res_m) ;
   /* ML->C*/
   %s
   %s
@@ -227,13 +246,14 @@ let gen_stanza_bodies oc = function
   %s
   /* C->ML*/
   %s
-  CAMLreturn(_mlv_res) ;
+  CAMLreturn(_mlv_res.extract()) ;
 }
 "
      fname
-  (String.concat ", " (List.map (fun (_,_,mlid) -> (Printf.sprintf "value %s" mlid)) args))
+  (String.concat ", " argdecl_l)
+  (String.concat "\n" decls_l)
   (List.length argformals)
-  (String.concat ", " (List.map third3 args))
+  (String.concat ", " param_l)
   (* ML->C *)
   (String.concat "\n  " (List.map (fun (cty, cid, mlid) ->
     Printf.sprintf "%s %s;\n  ml2c(%s, &%s);" (fmt_cpptype cty) cid mlid cid) args))

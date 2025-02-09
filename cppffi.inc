@@ -47,27 +47,27 @@ value c2ml_opt_owned_pointer(const T *& p) {
     return c2ml(w.p()) ;
 }
 
-value c2ml(int v) { return Val_int(v) ; }
-value c2ml(unsigned int v) { return Val_int(v) ; }
-value c2ml(bool v) { return Val_bool(v) ; }
-value c2ml(char v) { return Val_int((int)v) ; }
-value c2ml(unsigned char v) { return Val_int((int)v) ; }
+value_INT c2ml(int v) { return Val_int(v) ; }
+value_INT c2ml(unsigned int v) { return Val_int(v) ; }
+value_INT c2ml(bool v) { return Val_bool(v) ; }
+value_INT c2ml(char v) { return Val_int((int)v) ; }
+value_INT c2ml(unsigned char v) { return Val_int((int)v) ; }
 
 //value c2ml(int32_t v) { return caml_copy_int32(v) ; }
 //value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
-value c2ml(int64_t v) { return caml_copy_int64(v) ; }
-value c2ml(uint64_t v) { return caml_copy_int64(v) ; }
+value_INT64 c2ml(int64_t v) { return caml_copy_int64(v) ; }
+value_INT64 c2ml(uint64_t v) { return caml_copy_int64(v) ; }
 
-void ml2c(const value v, int *cv) { *cv = Int_val(v) ; }
-void ml2c(const value v, unsigned int *cv) { *cv = Int_val(v) ; }
-void ml2c(const value v, bool *cv) { *cv = Bool_val(v) ; }
-void ml2c(const value v, char *cv) { *cv = (char)Int_val(v) ; }
-void ml2c(const value v, unsigned char *cv) { *cv = (char)Int_val(v) ; }
+void ml2c(const value_INT v, int *cv) { *cv = Int_val(v.extract()) ; }
+void ml2c(const value_INT v, unsigned int *cv) { *cv = Int_val(v.extract()) ; }
+void ml2c(const value_INT v, bool *cv) { *cv = Bool_val(v.extract()) ; }
+void ml2c(const value_INT v, char *cv) { *cv = (char)Int_val(v.extract()) ; }
+void ml2c(const value_INT v, unsigned char *cv) { *cv = (char)Int_val(v.extract()) ; }
 
 //void ml2c(const value v, int32_t *cv) { *cv = Int32_val(v) ; }
 //void ml2c(const value v, uint32_t *cv) { *cv = Int32_val(v) ; }
-void ml2c(const value v, int64_t *cv) { *cv = Int64_val(v) ; }
-void ml2c(const value v, uint64_t *cv) { *cv = Int64_val(v) ; }
+void ml2c(const value_INT64 v, int64_t *cv) { *cv = Int64_val(v.extract()) ; }
+void ml2c(const value_INT64 v, uint64_t *cv) { *cv = Int64_val(v.extract()) ; }
 
 value c2ml(const std::string& v) {
   uint32_t size = v.size() ;

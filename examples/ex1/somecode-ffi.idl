@@ -19,28 +19,11 @@
    (name size_t)))
 
    (FOREIGN
-    ((ID std::string))
-    somecode_foo
-    (((PRIM INT) n))
-     "_res0 = somecode::foo(n); ")
-
-   (FOREIGN
     ((PRIM INT))
     somecode_int32_to_int
     (((PRIM INT) n))
      "_res0 = n; ")
 
-   (FOREIGN
-    ((PRIM INT))
-    somecode_int_to_int32
-    (((PRIM INT) n))
-     "_res0 = n; ")
-
-   (FOREIGN
-    ((TYCON "std::tuple" ((ID std::string) (PRIM INT))))
-    somecode_bar
-    (((ID std::string) s) ((PRIM INT) n))
-     "_res0 = somecode::bar(s, n); ")
    )
   )
  )
