@@ -17,6 +17,12 @@
   ((mltype (EXP int64))
    (cpptype (ID size_t))
    (name size_t)))
+ 
+   (FOREIGN
+    ((ID std::string))
+    somecode_foo
+    (((PRIM INT) n))
+     "_res0 = somecode::foo(n); ")
 
    (FOREIGN
     ((PRIM INT))

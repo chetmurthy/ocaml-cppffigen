@@ -8,6 +8,7 @@ let push l x = (l := x :: !l)
 
 let version = "0.002"
 
+module CPPTYPE = struct
 type primtype =
   | INT | UINT
   | INT64 | UINT64
@@ -16,20 +17,23 @@ type primtype =
   | BOOL
       [@@deriving sexp]
 
-type cpptype =
-    PTR of cpptype
+type t =
+    PTR of t
   | ID of string
-  | TYCON of string * cpptype list
+  | TYCON of string * t list
   | PRIM of primtype [@@deriving sexp]
+end
 
-type mltype =
+module MLTYPE = struct
+type t =
   | GEN of string
   | EXP of string [@@deriving sexp]
+end
 
 type def_t =
   { name : string ;
-    mltype : mltype ;
-    cpptype : cpptype ;
+    mltype : MLTYPE.t ;
+    cpptype : CPPTYPE.t ;
   } [@@deriving sexp]
 
 module Attribute = struct
@@ -38,7 +42,7 @@ type t =
     target : string ;
     aname : string ;
     fprefix : string ;
-    cpptype : cpptype ;
+    cpptype : CPPTYPE.t ;
   } [@@deriving sexp]
 end
 
@@ -47,7 +51,7 @@ module Struct = struct
     {
       modname : string ;
       name : string ;
-      members : (cpptype * string) list ;
+      members : (CPPTYPE.t * string) list ;
     } [@@deriving sexp]
 end
 
@@ -57,12 +61,12 @@ type stanza_t =
   | TYPEDEF of def_t
   | STRUCT of Struct.t
   | ATTRIBUTE of Attribute.t
-  | CPP2ML of cpptype * string
-  | ML2CPP of cpptype * string
+  | CPP2ML of CPPTYPE.t * string
+  | ML2CPP of CPPTYPE.t * string
   | CPP of loc * string
   | ML of loc * string
   | MLI of loc * string
-  | FOREIGN of cpptype list * string * (cpptype * string) list * string [@@deriving sexp]
+  | FOREIGN of CPPTYPE.t list * string * (CPPTYPE.t * string) list * string [@@deriving sexp]
 
 let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
     [FOREIGN([], Printf.sprintf "%s%s_set_%s" fprefix target aname,
@@ -73,7 +77,7 @@ let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
   ]
 
 let prim2mltype = function
-  | (INT | UINT) -> "int"
+  | (CPPTYPE.INT | UINT) -> "int"
   | (INT64 | UINT64) ->"int64"
   | (INT32 | UINT32) -> "int32"
   | (CHAR | UCHAR) -> "char"
@@ -81,13 +85,13 @@ let prim2mltype = function
 
 let ctype2mltype tmap cty =
   let rec crec = function
-    | PRIM t -> prim2mltype t
+    | CPPTYPE.PRIM t -> prim2mltype t
     | ID "std::string" -> "string"
     | ID s -> begin
       if not (List.mem_assoc s tmap) then
 	failwith (Printf.sprintf "typename %s not found in map" s) ;
       match List.assoc s tmap with
-      | GEN s -> s
+      | MLTYPE.GEN s -> s
       | EXP s -> "("^s^")"
     end
     | TYCON("std::vector",[cty]) -> Printf.sprintf "(%s array)" (crec cty)
@@ -100,7 +104,7 @@ let ctype2mltype tmap cty =
   in  crec cty
 
 let fmt_primcpptype = function
-  | INT -> "int"
+  | CPPTYPE.INT -> "int"
   | UINT -> "unsigned int"
   | INT64 -> "int64_t"
   | UINT64 -> "uint64_t"
@@ -112,7 +116,7 @@ let fmt_primcpptype = function
   
 let fmt_cpptype ty =
   let rec frec = function
-    | ID s -> s
+    | CPPTYPE.ID s -> s
     | PTR t -> Printf.sprintf "%s*" (frec t)
     | TYCON (id, l) ->
        Printf.sprintf "%s< %s >" id (String.concat ", " (List.map frec l))
@@ -326,7 +330,7 @@ let gen_typedecls ~ml oc tmap =
   Printf.fprintf oc (if ml then "module Types = struct\n" else "module Types : sig\n");
   Printf.fprintf oc "type %s\n"
     (String.concat "\nand " (List.map (function
-    | (id, EXP s) -> Printf.sprintf "%s = %s" id s
+    | (id, MLTYPE.EXP s) -> Printf.sprintf "%s = %s" id s
     | (id, GEN s) ->  s
      ) l)) ;
   Printf.fprintf oc "end\n" ;
