@@ -31,7 +31,7 @@
      "_res0 = n; ")
 
    (FOREIGN
-    ((PRIM INT))
+    ((PRIM INT32))
     somecode_int_to_int32
     (((PRIM INT) n))
      "_res0 = n; ")

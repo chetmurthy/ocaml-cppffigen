@@ -14,6 +14,7 @@ struct OptWrap ;
 
 struct sentinel_GENERIC { } ;
 struct sentinel_INT { } ;
+struct sentinel_INT32 { } ;
 struct sentinel_INT64 { } ;
 
 template <typename T, typename U>
@@ -46,8 +47,8 @@ value c2ml(sentinel_INT& unused, bool v) ;
 value c2ml(sentinel_INT& unused, char v) ;
 value c2ml(sentinel_INT& unused, unsigned char v) ;
 
-//value c2ml(int32_t v) { return caml_copy_int32(v) ; }
-//value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
+value c2ml(sentinel_INT32& unused, int32_t v) ;
+value c2ml(sentinel_INT32& unused, uint32_t v) ;
 value c2ml(sentinel_INT64& unused, int64_t v) ;
 value c2ml(sentinel_INT64& unused, uint64_t v) ;
 

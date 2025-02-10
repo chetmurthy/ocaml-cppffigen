@@ -53,8 +53,8 @@ value c2ml(sentinel_INT& unused, bool v) { return Val_bool(v) ; }
 value c2ml(sentinel_INT& unused, char v) { return Val_int((int)v) ; }
 value c2ml(sentinel_INT& unused, unsigned char v) { return Val_int((int)v) ; }
 
-//value c2ml(int32_t v) { return caml_copy_int32(v) ; }
-//value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
+value c2ml(sentinel_INT32& unused, int32_t v) { return caml_copy_int32(v) ; }
+value c2ml(sentinel_INT32& unused, uint32_t v) { return caml_copy_int32(v) ; }
 value c2ml(sentinel_INT64& unused, int64_t v) { return caml_copy_int64(v) ; }
 value c2ml(sentinel_INT64& unused, uint64_t v) { return caml_copy_int64(v) ; }
 
