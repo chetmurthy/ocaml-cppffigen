@@ -47,16 +47,16 @@ value c2ml_opt_owned_pointer(const T *& p) {
     return c2ml(w.p()) ;
 }
 
-value c2ml(int v) { return Val_int(v) ; }
-value c2ml(unsigned int v) { return Val_int(v) ; }
-value c2ml(bool v) { return Val_bool(v) ; }
-value c2ml(char v) { return Val_int((int)v) ; }
-value c2ml(unsigned char v) { return Val_int((int)v) ; }
+value c2ml(sentinel_INT& unused, int v) { return Val_int(v) ; }
+value c2ml(sentinel_INT& unused, unsigned int v) { return Val_int(v) ; }
+value c2ml(sentinel_INT& unused, bool v) { return Val_bool(v) ; }
+value c2ml(sentinel_INT& unused, char v) { return Val_int((int)v) ; }
+value c2ml(sentinel_INT& unused, unsigned char v) { return Val_int((int)v) ; }
 
 //value c2ml(int32_t v) { return caml_copy_int32(v) ; }
 //value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
-value c2ml(int64_t v) { return caml_copy_int64(v) ; }
-value c2ml(uint64_t v) { return caml_copy_int64(v) ; }
+value c2ml(sentinel_INT64& unused, int64_t v) { return caml_copy_int64(v) ; }
+value c2ml(sentinel_INT64& unused, uint64_t v) { return caml_copy_int64(v) ; }
 
 void ml2c(const value v, int *cv) { *cv = Int_val(v) ; }
 void ml2c(const value v, unsigned int *cv) { *cv = Int_val(v) ; }
@@ -69,7 +69,7 @@ void ml2c(const value v, unsigned char *cv) { *cv = (char)Int_val(v) ; }
 void ml2c(const value v, int64_t *cv) { *cv = Int64_val(v) ; }
 void ml2c(const value v, uint64_t *cv) { *cv = Int64_val(v) ; }
 
-value c2ml(const std::string& v) {
+value c2ml(sentinel_GENERIC& unused, const std::string& v) {
   uint32_t size = v.size() ;
   value res = caml_alloc_string(size);
   memmove((void *)String_val(res), (const void *)v.c_str(), size);
@@ -81,18 +81,18 @@ void ml2c(const value v, std::string *cv) {
   *cv = std::string(String_val(v), size) ;
 }
 
-template<class T, class U>
-value c2ml(const T& t, const U& u) {
+template<class T, class U, typename ML_T, typename ML_U>
+value c2ml(ML_T& unused1, ML_U& unused2, const T& t, const U& u) {
   CAMLparam0() ;
   CAMLlocal1(mlv) ;
   mlv = caml_alloc_tuple(2) ;
-  Store_field(mlv, 0, c2ml(t)) ;
-  Store_field(mlv, 1, c2ml(u)) ;
+  Store_field(mlv, 0, c2ml(unused1, t)) ;
+  Store_field(mlv, 1, c2ml(unused2, u)) ;
   CAMLreturn(mlv) ;
 }
-template<class T, class U>
-value c2ml(const std::tuple<T, U>& v) {
-  return c2ml(std::get<0>(v), std::get<1>(v)) ;
+template<class T, class U, typename ML_T, typename ML_U>
+value c2ml(sentinel_TUPLE2<ML_T, ML_U>& unused, const std::tuple<T, U>& v) {
+  return c2ml(unused.t, unused.u, std::get<0>(v), std::get<1>(v)) ;
 }
 
 template<class T, class U>
@@ -101,19 +101,27 @@ void ml2c(const value v, std::tuple<T, U>* cv) {
   ml2c(Field(v, 1), &(std::get<1>(*cv))) ;
 }
 
-template<class T, class U, class V>
-value c2ml(const T& t, const U& u, const V& v) {
+template<class T, class U, class V,
+	 typename ML_T,
+	 typename ML_U,
+	 typename ML_V
+        >
+value c2ml(ML_T& unusedt, ML_U& unusedu, ML_V& unusedv, const T& t, const U& u, const V& v) {
   CAMLparam0() ;
   CAMLlocal1(mlv) ;
   mlv = caml_alloc_tuple(3) ;
-  Store_field(mlv, 0, c2ml(t)) ;
-  Store_field(mlv, 1, c2ml(u)) ;
-  Store_field(mlv, 2, c2ml(v)) ;
+  Store_field(mlv, 0, c2ml(unusedt, t)) ;
+  Store_field(mlv, 1, c2ml(unusedu, u)) ;
+  Store_field(mlv, 2, c2ml(unusedv, v)) ;
   CAMLreturn(mlv) ;
 }
-template<class T, class U, class V>
-value c2ml(const std::tuple<T, U, V>& v) {
-  return c2ml(std::get<0>(v), std::get<1>(v), std::get<2>(v)) ;
+template<class T, class U, class V,
+	 typename ML_T,
+	 typename ML_U,
+	 typename ML_V
+        >
+value c2ml(sentinel_TUPLE3<ML_T, ML_U, ML_V>& unused, const std::tuple<T, U, V>& v) {
+  return c2ml(unused.t, unused.u, unused.v, std::get<0>(v), std::get<1>(v), std::get<2>(v)) ;
 }
 
 template<class T, class U, class V>
@@ -123,13 +131,14 @@ void ml2c(const value v, std::tuple<T, U, V>* cv) {
   ml2c(Field(v, 2), &(std::get<2>(*cv))) ;
 }
 
-template<class T>
-value c2ml(const std::vector<T>& v) {
+template<class T, typename ML_T>
+value c2ml(sentinel_ARRAY<ML_T> unused, const std::vector<T>& v) {
   CAMLparam0() ;
   CAMLlocal1(mlv) ;
   mlv = caml_alloc(v.size(), 0) ;
-   for(int i = 0 ; i < v.size(); i++) {
-    Store_field(mlv, i, c2ml(v[i])) ;
+  ML_T unused1;
+  for(int i = 0 ; i < v.size(); i++) {
+    Store_field(mlv, i, c2ml(unused1, v[i])) ;
   }
   CAMLreturn(mlv) ;
 }
@@ -146,8 +155,8 @@ void ml2c(const value v, std::vector<T>* cv) {
   }
 }
 
-template<class T>
-value c2ml_opt(const T *&p) {
+template<class T, typename ML_T>
+value c2ml_opt(ML_T& unused, const T *&p) {
     CAMLparam0 () ;
   if (NULL == p) {
     CAMLreturn (Val_int(0)) ;
@@ -155,12 +164,13 @@ value c2ml_opt(const T *&p) {
   else {
     CAMLlocal1 (v) ;
     v = caml_alloc_small(1, 0) ;
-    Field(v, 0) = c2ml(*p) ;
+    Field(v, 0) = c2ml(unused, *p) ;
     CAMLreturn(v) ;
   }
 }
 
-template <class T>
-value c2ml(const Opt<T> *ssp) {
-  return c2ml_opt(ssp) ;
+template <class T, typename ML_T>
+value c2ml(sentinel_OPTION<ML_T> unused, const Opt<T> *ssp) {
+    ML_T unused1;
+    return c2ml_opt(unused1, ssp) ;
 }

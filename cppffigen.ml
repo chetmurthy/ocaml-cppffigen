@@ -228,21 +228,26 @@ let gen_stanza_forwards oc = function
   | ML2CPP(cty, _) ->
      Printf.fprintf oc "void ml2c(const value _mlvalue, %s *_cvaluep);\n" (fmt_cpptype cty)
 
-let concretetype_to_valuetype = function
-    MLTYPE.INT -> "value"
-  | INT32 -> "value"
-  | INT64 -> "value"
-  | CHAR -> "value"
-  | BOOL -> "value"
-  | NATIVEINT -> "value"
-  | ARRAY _ -> "value"
-  | TUPLE _ -> "value"
-  | OPTION _ -> "value"
-  | OTHER _ -> "value"
+let rec concretetype_to_sentineltype = function
+    MLTYPE.INT -> "sentinel_INT"
+  | INT32 -> "sentinel_INT32"
+  | INT64 -> "sentinel_INT64"
+  | CHAR -> "sentinel_CHAR"
+  | BOOL -> "sentinel_BOOL"
+  | NATIVEINT -> "sentinel_NATIVEINT"
+  | ARRAY t -> Printf.sprintf "sentinel_ARRAY<%s>" (concretetype_to_sentineltype t)
+  | TUPLE [t;u] -> Printf.sprintf "sentinel_TUPLE2<%s,%s>"
+                     (concretetype_to_sentineltype t) (concretetype_to_sentineltype u)
+  | TUPLE [t;u;v] -> 
+     Printf.sprintf "sentinel_TUPLE3<%s,%s,%s>"
+       (concretetype_to_sentineltype t)
+       (concretetype_to_sentineltype u)
+       (concretetype_to_sentineltype v)
+  | OPTION t -> Printf.sprintf "sentinel_OPTION<%s>" (concretetype_to_sentineltype t)
+  | OTHER _ -> "sentinel_GENERIC"
 
 let arg_snippets tmap (cty, cid) =
   let ml_cty = ctype2concretetype tmap cty in
-  let cty_valuetype = concretetype_to_valuetype ml_cty in
   let formal_varname = Printf.sprintf "_mlv_%s" cid in
   let argdecl = Printf.sprintf "value %s" formal_varname in
   (argdecl, formal_varname)
@@ -266,11 +271,7 @@ let gen_stanza_bodies tmap oc = function
 "
        (fmt_cpptype cty) body
   | FOREIGN(rtys, fname, argformals, body) ->
-     let ml_rty = match List.map (ctype2concretetype tmap) rtys with
-         [] -> failwith "internal error: no rtys"
-       | [t] -> t
-       | l -> MLTYPE.TUPLE l in
-     let rty_valuetype = concretetype_to_valuetype ml_rty in
+     let ml_rtyl = List.map (ctype2concretetype tmap) rtys in
      let converted_l = List.map (arg_snippets tmap) argformals in
      let argdecl_l = List.map fst converted_l in
      let param_l = List.map snd converted_l in
@@ -306,10 +307,13 @@ let gen_stanza_bodies tmap oc = function
   body
   (* C->ML *)
   (match rtys with [] -> "" | l ->
-    Printf.sprintf "  _mlv_res = c2ml(%s);"
-      (String.concat ", " (List.mapi (fun i cty ->
-	Printf.sprintf "_res%d" i)
-			     l)))
+    let res_vars = List.mapi (fun i _ -> Printf.sprintf "_res%d" i) ml_rtyl in
+    let sentinel_types = List.map concretetype_to_sentineltype ml_rtyl in
+    let sentinel_vars = List.mapi (fun i _ -> Printf.sprintf "_s%d" i) sentinel_types in
+    let sentinel_decls = List.mapi (fun i sty -> Printf.sprintf "%s _s%d" sty i) sentinel_types in
+    let res_assignment =
+      Printf.sprintf "  _mlv_res = c2ml(%s);" (String.concat ", " (sentinel_vars@res_vars)) in
+    String.concat ";\n" (sentinel_decls@[res_assignment]))
 
 let gen (typedecls, tmap) oc t =
 output_string oc "
