@@ -48,16 +48,16 @@ void ml2c_set_owned_pointer(value v, T cv) ;
 template<class T>
 value c2ml_opt_owned_pointer(const T *& p) ;
 
-value_INT c2ml(int v) ;
-value_INT c2ml(unsigned int v) ;
-value_INT c2ml(bool v) ;
-value_INT c2ml(char v) ;
-value_INT c2ml(unsigned char v) ;
+value c2ml(int v) ;
+value c2ml(unsigned int v) ;
+value c2ml(bool v) ;
+value c2ml(char v) ;
+value c2ml(unsigned char v) ;
 
 //value c2ml(int32_t v) { return caml_copy_int32(v) ; }
 //value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
-value_INT64 c2ml(int64_t v) ;
-value_INT64 c2ml(uint64_t v) ;
+value c2ml(int64_t v) ;
+value c2ml(uint64_t v) ;
 
 void ml2c(const value_INT v, int *cv) ;
 void ml2c(const value_INT v, unsigned int *cv) ;
@@ -72,7 +72,7 @@ void ml2c(const value_INT64 v, uint64_t *cv) ;
 
 value c2ml(const std::string& v) ;
 
-void ml2c(const value v, std::string *cv) ;
+void ml2c(const value_GENERIC v, std::string *cv) ;
 
 template<class T, class U>
   value c2ml(const T& t, const U& u) ;

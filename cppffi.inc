@@ -47,16 +47,16 @@ value c2ml_opt_owned_pointer(const T *& p) {
     return c2ml(w.p()) ;
 }
 
-value_INT c2ml(int v) { return Val_int(v) ; }
-value_INT c2ml(unsigned int v) { return Val_int(v) ; }
-value_INT c2ml(bool v) { return Val_bool(v) ; }
-value_INT c2ml(char v) { return Val_int((int)v) ; }
-value_INT c2ml(unsigned char v) { return Val_int((int)v) ; }
+value c2ml(int v) { return Val_int(v) ; }
+value c2ml(unsigned int v) { return Val_int(v) ; }
+value c2ml(bool v) { return Val_bool(v) ; }
+value c2ml(char v) { return Val_int((int)v) ; }
+value c2ml(unsigned char v) { return Val_int((int)v) ; }
 
 //value c2ml(int32_t v) { return caml_copy_int32(v) ; }
 //value c2ml(uint32_t v) { return caml_copy_int32(v) ; }
-value_INT64 c2ml(int64_t v) { return caml_copy_int64(v) ; }
-value_INT64 c2ml(uint64_t v) { return caml_copy_int64(v) ; }
+value c2ml(int64_t v) { return caml_copy_int64(v) ; }
+value c2ml(uint64_t v) { return caml_copy_int64(v) ; }
 
 void ml2c(const value_INT v, int *cv) { *cv = Int_val(v.extract()) ; }
 void ml2c(const value_INT v, unsigned int *cv) { *cv = Int_val(v.extract()) ; }
@@ -76,9 +76,9 @@ value c2ml(const std::string& v) {
   return res ;
 }
 
-void ml2c(const value v, std::string *cv) {
-  int size = caml_string_length(v) ;
-  *cv = std::string(String_val(v), size) ;
+void ml2c(const value_GENERIC v, std::string *cv) {
+  int size = caml_string_length(v.extract()) ;
+  *cv = std::string(String_val(v.extract()), size) ;
 }
 
 template<class T, class U>
