@@ -36,12 +36,12 @@ let print_status st =
     TYPEDEF{
       name="status";
       cpptype=ID"rocksdb::Status";
-      mltype=EXP"status_t";
+      mltype=MLTYPE.CONCRETE (OTHER "status_t");
     };
     TYPEDEF{
       name="cfhandle_id";
       cpptype=PTR(ID"rocksdb::ColumnFamilyHandle") ;
-      mltype=GEN "cfhandle_id";
+      mltype= MLTYPE.ABSTRACT "cfhandle_id";
     } ;
     CPP2ML(ID"cfhandle_id",
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
@@ -51,7 +51,7 @@ let print_status st =
     TYPEDEF{
       name="db_id";
       cpptype=PTR(ID"rocksdb::DB") ;
-      mltype=GEN "db_id";
+      mltype= MLTYPE.ABSTRACT "db_id";
     } ;
     CPP2ML(ID"db_id",
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
@@ -61,7 +61,7 @@ let print_status st =
     TYPEDEF{
       name="dboptions_id";
       cpptype=PTR(ID"rocksdb::DBOptions") ;
-      mltype=GEN "dboptions_id";
+      mltype= MLTYPE.ABSTRACT "dboptions_id";
     } ;
     CPP2ML(ID"dboptions_id",
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
@@ -77,7 +77,7 @@ let print_status st =
     TYPEDEF{
       name="cfoptions_id";
       cpptype=PTR(ID"rocksdb::ColumnFamilyOptions") ;
-      mltype=GEN "cfoptions_id";
+      mltype= MLTYPE.ABSTRACT "cfoptions_id";
     } ;
     CPP2ML(ID"cfoptions_id",
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
@@ -87,7 +87,7 @@ let print_status st =
     TYPEDEF{
       name="cfdescriptor_id";
       cpptype=PTR(ID"rocksdb::ColumnFamilyDescriptor") ;
-      mltype=GEN "cfdescriptor_id";
+      mltype= MLTYPE.ABSTRACT "cfdescriptor_id";
     } ;
     CPP2ML(ID"cfdescriptor_id",
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
@@ -97,7 +97,7 @@ let print_status st =
     TYPEDEF{
       name="comparator_id";
       cpptype=PTR(ID"rocksdb::Comparator") ;
-      mltype=GEN "comparator_id";
+      mltype=MLTYPE.ABSTRACT "comparator_id";
     } ;
     CPP2ML(ID"comparator_id",
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;

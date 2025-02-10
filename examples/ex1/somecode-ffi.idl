@@ -14,7 +14,7 @@
 #include \"cppffi.h\"
 ")
   (TYPEDEF
-  ((mltype (EXP int64))
+   ((mltype (CONCRETE INT64))
    (cpptype (ID size_t))
    (name size_t)))
  

@@ -11,12 +11,14 @@ let expand_composite tmap t =
 
 let gen_f mode =
   let t = t_of_sexp (Sexplib.Sexp.input_sexp stdin) in
-  let tmap = ML.setup_typedecls t in
+  let typedecls = ML.setup_typedecls t in
+  let tmap = List.map (function (id, MLTYPE.CONCRETE t) -> (id, t) | (id, ABSTRACT s) -> (id, MLTYPE.OTHER s)) typedecls in
+
   let t = expand_composite tmap t in
   match mode with
   | `CPP -> CPP.gen stdout t
-  | `ML -> ML.gen tmap stdout t
-  | `MLI -> MLI.gen tmap stdout t
+  | `ML -> ML.gen (typedecls,tmap) stdout t
+  | `MLI -> MLI.gen (typedecls,tmap) stdout t
   | `SEXP -> Sexplib.Sexp.output_hum stdout(sexp_of_t t)
 
 let opts_sect = "OPTIONS"

@@ -25,9 +25,40 @@ type t =
 end
 
 module MLTYPE = struct
+  type concrete_type =
+    INT
+  | INT32
+  | INT64
+  | CHAR
+  | BOOL
+  | NATIVEINT
+  | ARRAY of concrete_type
+  | TUPLE of concrete_type list
+  | OPTION of concrete_type
+  | OTHER of string [@@deriving sexp]
+
+  let rec concrete_to_mlstring cty =
+    let rec crec = function
+      INT -> "int"
+    | INT32 -> "int32"
+    | INT64 -> "int64"
+    | CHAR -> "char"
+    | BOOL -> "bool"
+    | NATIVEINT -> "nativeint"
+    | ARRAY ty  -> Printf.sprintf "(%s array)" (crec ty)
+    | TUPLE l  -> Printf.sprintf "(%s)" (String.concat " * " (List.map crec l))
+    | OPTION ty  -> Printf.sprintf "(%s option)" (crec ty)
+    | OTHER s -> Printf.sprintf "(%s)" s
+    in crec cty
+
 type t =
-  | GEN of string
-  | EXP of string [@@deriving sexp]
+  | ABSTRACT of string
+  | CONCRETE of concrete_type [@@deriving sexp]
+
+let to_mlstring = function
+    ABSTRACT s -> s
+  | CONCRETE cty -> concrete_to_mlstring cty
+
 end
 
 type def_t =
@@ -77,28 +108,25 @@ let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
   ]
 
 let prim2mltype = function
-  | (CPPTYPE.INT | UINT) -> "int"
-  | (INT64 | UINT64) ->"int64"
-  | (INT32 | UINT32) -> "int32"
-  | (CHAR | UCHAR) -> "char"
-  | BOOL -> "bool"
+  | (CPPTYPE.INT | UINT) -> MLTYPE. INT
+  | (INT64 | UINT64) -> MLTYPE.INT64
+  | (INT32 | UINT32) -> MLTYPE.INT32
+  | (CHAR | UCHAR) -> MLTYPE.CHAR
+  | BOOL -> MLTYPE.BOOL
 
-let ctype2mltype tmap cty =
+let ctype2concretetype tmap cty : MLTYPE.concrete_type =
   let rec crec = function
     | CPPTYPE.PRIM t -> prim2mltype t
-    | ID "std::string" -> "string"
+    | ID "std::string" -> MLTYPE.(OTHER "string")
     | ID s -> begin
       if not (List.mem_assoc s tmap) then
 	failwith (Printf.sprintf "typename %s not found in map" s) ;
-      match List.assoc s tmap with
-      | MLTYPE.GEN s -> s
-      | EXP s -> "("^s^")"
+      List.assoc s tmap
     end
-    | TYCON("std::vector",[cty]) -> Printf.sprintf "(%s array)" (crec cty)
-    | TYCON("std::tuple",[a;b]) -> Printf.sprintf "(%s * %s)"  (crec a) (crec b)
-    | TYCON("std::tuple",l) ->
-       Printf.sprintf "(%s)" (String.concat " * " (List.map crec l))
-    | PTR (TYCON("Opt",[cty])) -> Printf.sprintf "(%s option)" (crec cty)
+    | TYCON("std::vector",[cty]) -> MLTYPE.(ARRAY (crec cty))
+    | TYCON("std::tuple",[a;b]) -> MLTYPE.(TUPLE [crec a; crec b])
+    | TYCON("std::tuple",l) -> MLTYPE.(TUPLE (List.map crec l))
+    | PTR (TYCON("Opt",[cty])) -> MLTYPE.(OPTION (crec cty))
     | TYCON _ -> failwith "unrecognized C++ type-constructor"
     | PTR _ -> failwith "cannot map a PTR type to an ML type (should use typedef)"
   in  crec cty
@@ -133,7 +161,7 @@ end
 "
 	 modname
 	 (String.concat ""
-	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (ctype2mltype tmap cty)) members))) ;
+	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (MLTYPE.concrete_to_mlstring (ctype2concretetype tmap cty))) members))) ;
     MLI(PROLOGUE,
        Printf.sprintf "
 module %s : sig
@@ -142,7 +170,7 @@ end
 "
 	 modname
 	 (String.concat ""
-	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (ctype2mltype tmap cty)) members))) ;
+	    (List.map (fun (cty,n) -> Printf.sprintf "\n    %s : %s ;" n (MLTYPE.concrete_to_mlstring (ctype2concretetype tmap cty))) members))) ;
     CPP(PROLOGUE,
 	Printf.sprintf "
 #ifndef %s_t_DEFINED
@@ -157,7 +185,7 @@ struct %s_t {\n%s} ;
     TYPEDEF {
       name ;
       cpptype = ID(Printf.sprintf "struct %s_t" name) ;
-      mltype = EXP(Printf.sprintf "%s.t" modname) ;
+      mltype = CONCRETE(OTHER (Printf.sprintf "%s.t" modname)) ;
     } ;
     ML2CPP(ID name,
 	   String.concat "\n  "
@@ -320,7 +348,7 @@ let setup_typedecls t =
   | STRUCT t ->
      if List.mem_assoc t.Struct.name !tmap then
        failwith (Printf.sprintf "struct name %s already previously typedef-ed" t.Struct.name) ;
-    push tmap (t.Struct.name, EXP (Printf.sprintf "%s.t" t.Struct.modname))
+    push tmap (t.Struct.name, MLTYPE.CONCRETE (OTHER (Printf.sprintf "%s.t" t.Struct.modname)))
   | _ -> ()
   ) t.stanzas ;
   !tmap
@@ -330,8 +358,8 @@ let gen_typedecls ~ml oc tmap =
   Printf.fprintf oc (if ml then "module Types = struct\n" else "module Types : sig\n");
   Printf.fprintf oc "type %s\n"
     (String.concat "\nand " (List.map (function
-    | (id, MLTYPE.EXP s) -> Printf.sprintf "%s = %s" id s
-    | (id, GEN s) ->  s
+    | (id, MLTYPE.CONCRETE s) -> Printf.sprintf "%s = %s" id (MLTYPE.concrete_to_mlstring s)
+    | (id, ABSTRACT s) ->  s
      ) l)) ;
   Printf.fprintf oc "end\n" ;
   ()
@@ -348,16 +376,16 @@ let gen_stanza tmap oc = function
        (match argformals with
        | [] -> "unit"
        | l -> String.concat " -> "
-	  (List.map (fun (cty, _) -> ctype2mltype tmap cty) l))
+	  (List.map (fun (cty, _) -> MLTYPE.concrete_to_mlstring (ctype2concretetype tmap cty)) l))
        (match rtys with
 	 [] -> "unit"
        | l -> String.concat " * "
-	  (List.map (ctype2mltype tmap) l))
+	  (List.map (fun t -> MLTYPE.concrete_to_mlstring (ctype2concretetype tmap t)) l))
        name
 
-let gen tmap oc t =
+let gen (typedecls, tmap) oc t =
   List.iter (output_string oc) (prologues t) ;
-  gen_typedecls ~ml:true oc tmap ;
+  gen_typedecls ~ml:true oc typedecls ;
   Printf.fprintf oc "open Types\n" ;
   List.iter (gen_stanza tmap oc) t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
@@ -378,9 +406,9 @@ let epilogues t =
 let gen_typedecls = ML.gen_typedecls ~ml:false
 let gen_stanza = ML.gen_stanza
     
-  let gen tmap oc t =
+  let gen (typedecls, tmap) oc t =
   List.iter (output_string oc) (prologues t) ;
-  gen_typedecls oc tmap ;
+  gen_typedecls oc typedecls ;
   Printf.fprintf oc "open Types\n" ;
   List.iter (gen_stanza tmap oc) t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
