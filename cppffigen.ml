@@ -228,17 +228,31 @@ let gen_stanza_forwards oc = function
   | ML2CPP(cty, _) ->
      Printf.fprintf oc "void ml2c(const value _mlvalue, %s *_cvaluep);\n" (fmt_cpptype cty)
 
-let arg_snippets (cty, cid) =
+let concretetype_to_valuetype = function
+    MLTYPE.INT -> "value_INT"
+  | INT32 -> "value_INT32"
+  | INT64 -> "value_INT64"
+  | CHAR -> "value_CHAR"
+  | BOOL -> "value_BOOL"
+  | NATIVEINT -> "value_NATIVEINT"
+  | ARRAY _ -> "value_GENERIC"
+  | TUPLE _ -> "value_GENERIC"
+  | OPTION _ -> "value_GENERIC"
+  | OTHER _ -> "value_GENERIC"
+
+let arg_snippets tmap (cty, cid) =
+  let ml_cty = ctype2concretetype tmap cty in
+  let cty_valuetype = concretetype_to_valuetype ml_cty in
   let formal_varname = Printf.sprintf "__mlv_%s" cid in
   let argdecl = Printf.sprintf "value %s" formal_varname in
   let structname = Printf.sprintf "_mlv_%s" cid in
   let refname = Printf.sprintf "_mlv_%s_m" cid in
   let decls = Printf.sprintf
- {|value_%s %s(%s) ;
-  value& %s = %s.m_v ;|} "INT" structname formal_varname refname structname in
+ {|%s %s(%s) ;
+  value& %s = %s.m_v ;|} cty_valuetype structname formal_varname refname structname in
   (argdecl, decls, refname)
 
-let gen_stanza_bodies oc = function
+let gen_stanza_bodies tmap oc = function
   | (ML _ | MLI _| TYPEDEF _) -> ()
   | CPP(HERE, s) -> output_string oc s
   | CPP _  -> ()
@@ -257,7 +271,12 @@ let gen_stanza_bodies oc = function
 "
        (fmt_cpptype cty) body
   | FOREIGN(rtys, fname, argformals, body) ->
-     let converted_l = List.map arg_snippets argformals in
+     let ml_rty = match List.map (ctype2concretetype tmap) rtys with
+         [] -> failwith "internal error: no rtys"
+       | [t] -> t
+       | l -> MLTYPE.TUPLE l in
+     let rty_valuetype = concretetype_to_valuetype ml_rty in
+     let converted_l = List.map (arg_snippets tmap) argformals in
      let argdecl_l = List.map fst3 converted_l in
      let decls_l = List.map snd3 converted_l in
      let param_l = List.map third3 converted_l in
@@ -268,7 +287,7 @@ let gen_stanza_bodies oc = function
 "extern \"C\" value %s(%s) {
   %s
   CAMLparam%d(%s);
-  value_INT _mlv_res(Val_unit) ;
+  %s _mlv_res(Val_unit) ;
   value& _mlv_res_m = _mlv_res.m_v ;
   CAMLxparam1 (_mlv_res_m) ;
   /* ML->C*/
@@ -286,6 +305,7 @@ let gen_stanza_bodies oc = function
   (String.concat "\n" decls_l)
   (List.length argformals)
   (String.concat ", " param_l)
+  rty_valuetype
   (* ML->C *)
   (String.concat "\n  " (List.map (fun (cty, cid, mlid) ->
     Printf.sprintf "%s %s;\n  ml2c(%s, &%s);" (fmt_cpptype cty) cid mlid cid) args))
@@ -302,7 +322,7 @@ let gen_stanza_bodies oc = function
 	Printf.sprintf "_res%d" i)
 			     l)))
 
-let gen oc t =
+let gen (typedecls, tmap) oc t =
 output_string oc "
 #include <stddef.h>
 #include <string.h>
@@ -320,7 +340,7 @@ output_string oc "
 #include \"cppffi.inc\"
 ";
   List.iter(fun s ->
-    gen_stanza_bodies oc s;
+    gen_stanza_bodies tmap oc s;
     output_string oc "\n") t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
   ()

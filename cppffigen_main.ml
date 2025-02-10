@@ -16,7 +16,7 @@ let gen_f mode =
 
   let t = expand_composite tmap t in
   match mode with
-  | `CPP -> CPP.gen stdout t
+  | `CPP -> CPP.gen (typedecls,tmap) stdout t
   | `ML -> ML.gen (typedecls,tmap) stdout t
   | `MLI -> MLI.gen (typedecls,tmap) stdout t
   | `SEXP -> Sexplib.Sexp.output_hum stdout(sexp_of_t t)
