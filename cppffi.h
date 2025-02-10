@@ -52,28 +52,28 @@ value c2ml(sentinel_INT32& unused, uint32_t v) ;
 value c2ml(sentinel_INT64& unused, int64_t v) ;
 value c2ml(sentinel_INT64& unused, uint64_t v) ;
 
-void ml2c(const value v, int *cv) ;
-void ml2c(const value v, unsigned int *cv) ;
-void ml2c(const value v, bool *cv) ;
-void ml2c(const value v, char *cv) ;
-void ml2c(const value v, unsigned char *cv) ;
+void ml2c(sentinel_INT& unused, const value v, int *cv) ;
+void ml2c(sentinel_INT& unused, const value v, unsigned int *cv) ;
+void ml2c(sentinel_INT& unused, const value v, bool *cv) ;
+void ml2c(sentinel_INT& unused, const value v, char *cv) ;
+void ml2c(sentinel_INT& unused, const value v, unsigned char *cv) ;
 
-//void ml2c(const value v, int32_t *cv) { *cv = Int32_val(v) ; }
-//void ml2c(const value v, uint32_t *cv) { *cv = Int32_val(v) ; }
-void ml2c(const value v, int64_t *cv) ;
-void ml2c(const value v, uint64_t *cv) ;
+void ml2c(sentinel_INT32& unused, const value v, int32_t *cv) ;
+void ml2c(sentinel_INT32& unused, const value v, uint32_t *cv) ;
+void ml2c(sentinel_INT64& unused, const value v, int64_t *cv) ;
+void ml2c(sentinel_INT64& unused, const value v, uint64_t *cv) ;
 
 value c2ml(sentinel_GENERIC& unused, const std::string& v) ;
 
-void ml2c(const value v, std::string *cv) ;
+void ml2c(sentinel_GENERIC& unused, const value v, std::string *cv) ;
 
 template<class T, class U, typename ML_T, typename ML_U>
 value c2ml(ML_T& unused1, ML_U& unused2, const T& t, const U& u) ;
 template<class T, class U, typename ML_T, typename ML_U>
 value c2ml(sentinel_TUPLE2<ML_T, ML_U>& unused, const std::tuple<T, U>& v) ;
 
-template<class T, class U>
-  void ml2c(const value v, std::tuple<T, U>* cv) ;
+template<class T, class U, typename ML_T, typename ML_U>
+  void ml2c(sentinel_TUPLE2<ML_T, ML_U>& unused, const value v, std::tuple<T, U>* cv) ;
 
 template<class T, class U, class V,
 	 typename ML_T,
@@ -89,14 +89,18 @@ template<class T, class U, class V,
         >
 value c2ml(sentinel_TUPLE3<ML_T, ML_U, ML_V>& unused, const std::tuple<T, U, V>& v) ;
 
-template<class T, class U, class V>
-  void ml2c(const value v, std::tuple<T, U, V>* cv) ;
+template<class T, class U, class V,
+	 typename ML_T,
+	 typename ML_U,
+	 typename ML_V
+        >
+  void ml2c(sentinel_TUPLE3<ML_T, ML_U, ML_V>& unused, const value v, std::tuple<T, U, V>* cv) ;
 
 template<class T, typename ML_T>
 value c2ml(sentinel_ARRAY<ML_T> unused, const std::vector<T>& v) ;
 
-template<typename T>
-void ml2c(const value v, std::vector<T>* cv) ;
+template<typename T, typename ML_T>
+void ml2c(sentinel_ARRAY<ML_T> unused, const value v, std::vector<T>* cv) ;
 
 template<class T, typename ML_T>
 value c2ml_opt(ML_T& unused, const T *&p) ;

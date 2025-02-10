@@ -9,7 +9,7 @@ let all = "all_tests" >:::
 	assert_equal "45" (Ocaml_somecode.somecode_foo 45))
   ; "somecode_int32_to_int" >::
       (fun ctxt ->
-	assert_equal ~printer:string_of_int 45 (Ocaml_somecode.somecode_int32_to_int 45))
+	assert_equal ~printer:string_of_int 45 (Ocaml_somecode.somecode_int32_to_int 45l))
   ; "somecode_int_to_int32" >::
       (fun ctxt ->
 	assert_equal ~printer:Int32.to_string 45l (Ocaml_somecode.somecode_int_to_int32 45))

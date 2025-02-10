@@ -298,7 +298,10 @@ let gen_stanza_bodies tmap oc = function
   (String.concat ", " param_l)
   (* ML->C *)
   (String.concat "\n  " (List.map (fun (cty, cid, mlid) ->
-    Printf.sprintf "%s %s;\n  ml2c(%s, &%s);" (fmt_cpptype cty) cid mlid cid) args))
+    Printf.sprintf "%s %s;\n  %s _s_%s;\n  ml2c(_s_%s, %s, &%s);"
+      (fmt_cpptype cty) cid
+      (concretetype_to_sentineltype (ctype2concretetype tmap cty)) cid
+      cid mlid cid) args))
   (match rtys with [] -> "" | ctys ->
     String.concat "\n  " (List.mapi (fun i cty ->
       Printf.sprintf "%s _res%d;" (fmt_cpptype cty) i)

@@ -58,16 +58,16 @@ value c2ml(sentinel_INT32& unused, uint32_t v) { return caml_copy_int32(v) ; }
 value c2ml(sentinel_INT64& unused, int64_t v) { return caml_copy_int64(v) ; }
 value c2ml(sentinel_INT64& unused, uint64_t v) { return caml_copy_int64(v) ; }
 
-void ml2c(const value v, int *cv) { *cv = Int_val(v) ; }
-void ml2c(const value v, unsigned int *cv) { *cv = Int_val(v) ; }
-void ml2c(const value v, bool *cv) { *cv = Bool_val(v) ; }
-void ml2c(const value v, char *cv) { *cv = (char)Int_val(v) ; }
-void ml2c(const value v, unsigned char *cv) { *cv = (char)Int_val(v) ; }
+void ml2c(sentinel_INT& unused, const value v, int *cv) { *cv = Int_val(v) ; }
+void ml2c(sentinel_INT& unused, const value v, unsigned int *cv) { *cv = Int_val(v) ; }
+void ml2c(sentinel_INT& unused, const value v, bool *cv) { *cv = Bool_val(v) ; }
+void ml2c(sentinel_INT& unused, const value v, char *cv) { *cv = (char)Int_val(v) ; }
+void ml2c(sentinel_INT& unused, const value v, unsigned char *cv) { *cv = (char)Int_val(v) ; }
 
-//void ml2c(const value v, int32_t *cv) { *cv = Int32_val(v) ; }
-//void ml2c(const value v, uint32_t *cv) { *cv = Int32_val(v) ; }
-void ml2c(const value v, int64_t *cv) { *cv = Int64_val(v) ; }
-void ml2c(const value v, uint64_t *cv) { *cv = Int64_val(v) ; }
+void ml2c(sentinel_INT32& unused, const value v, int32_t *cv) { *cv = Int32_val(v) ; }
+void ml2c(sentinel_INT32& unused, const value v, uint32_t *cv) { *cv = Int32_val(v) ; }
+void ml2c(sentinel_INT64& unused, const value v, int64_t *cv) { *cv = Int64_val(v) ; }
+void ml2c(sentinel_INT64& unused, const value v, uint64_t *cv) { *cv = Int64_val(v) ; }
 
 value c2ml(sentinel_GENERIC& unused, const std::string& v) {
   uint32_t size = v.size() ;
@@ -76,7 +76,7 @@ value c2ml(sentinel_GENERIC& unused, const std::string& v) {
   return res ;
 }
 
-void ml2c(const value v, std::string *cv) {
+void ml2c(sentinel_GENERIC& unused, const value v, std::string *cv) {
   int size = caml_string_length(v) ;
   *cv = std::string(String_val(v), size) ;
 }
@@ -95,10 +95,12 @@ value c2ml(sentinel_TUPLE2<ML_T, ML_U>& unused, const std::tuple<T, U>& v) {
   return c2ml(unused.t, unused.u, std::get<0>(v), std::get<1>(v)) ;
 }
 
-template<class T, class U>
-void ml2c(const value v, std::tuple<T, U>* cv) {
-  ml2c(Field(v, 0), &(std::get<0>(*cv))) ;
-  ml2c(Field(v, 1), &(std::get<1>(*cv))) ;
+template<class T, class U, typename ML_T, typename ML_U>
+void ml2c(sentinel_TUPLE2<ML_T, ML_U>& unused, const value v, std::tuple<T, U>* cv) {
+  ML_T t;
+  ml2c(t, Field(v, 0), &(std::get<0>(*cv))) ;
+  ML_U u;
+  ml2c(u, Field(v, 1), &(std::get<1>(*cv))) ;
 }
 
 template<class T, class U, class V,
@@ -124,11 +126,18 @@ value c2ml(sentinel_TUPLE3<ML_T, ML_U, ML_V>& unused, const std::tuple<T, U, V>&
   return c2ml(unused.t, unused.u, unused.v, std::get<0>(v), std::get<1>(v), std::get<2>(v)) ;
 }
 
-template<class T, class U, class V>
-void ml2c(const value v, std::tuple<T, U, V>* cv) {
-  ml2c(Field(v, 0), &(std::get<0>(*cv))) ;
-  ml2c(Field(v, 1), &(std::get<1>(*cv))) ;
-  ml2c(Field(v, 2), &(std::get<2>(*cv))) ;
+template<class T, class U, class V,
+	 typename ML_T,
+	 typename ML_U,
+	 typename ML_V
+        >
+void ml2c(sentinel_TUPLE3<ML_T, ML_U, ML_V>& unused, const value v, std::tuple<T, U, V>* cv) {
+  ML_T u_t;
+  ml2c(u_t, Field(v, 0), &(std::get<0>(*cv))) ;
+  ML_U u_u;
+  ml2c(u_u, Field(v, 1), &(std::get<1>(*cv))) ;
+  ML_V u_v;
+  ml2c(u_v, Field(v, 2), &(std::get<2>(*cv))) ;
 }
 
 template<class T, typename ML_T>
@@ -143,14 +152,15 @@ value c2ml(sentinel_ARRAY<ML_T> unused, const std::vector<T>& v) {
   CAMLreturn(mlv) ;
 }
 
-template<typename T>
-void ml2c(const value v, std::vector<T>* cv) {
+template<typename T, typename ML_T>
+void ml2c(sentinel_ARRAY<ML_T> unused, const value v, std::vector<T>* cv) {
+  ML_T t ;
   int n = caml_array_length(v) ;
   cv->clear();
   cv->resize(n) ;
   for(int i = 0 ; i < n ; i++) {
     T tmp ;
-    ml2c(Field(v, i), &tmp) ;
+    ml2c(t, Field(v, i), &tmp) ;
     (*cv)[i] = tmp ;
   }
 }

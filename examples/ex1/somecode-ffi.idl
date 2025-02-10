@@ -27,7 +27,7 @@
    (FOREIGN
     ((PRIM INT))
     somecode_int32_to_int
-    (((PRIM INT) n))
+    (((PRIM INT32) n))
      "_res0 = n; ")
 
    (FOREIGN
