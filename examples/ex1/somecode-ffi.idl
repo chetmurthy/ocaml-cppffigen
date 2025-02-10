@@ -41,6 +41,13 @@
     somecode_bar
     (((ID std::string) s) ((PRIM INT) n))
     "_res0 = somecode::bar(s, n); ")
+ 
+   (FOREIGN
+    ((ID std::string))
+    somecode_size_t_to_string
+    (((ID size_t) n))
+     "_res0 = somecode::size_t_to_string(n); ")
+
 
    )
   )

@@ -4,7 +4,7 @@ OCAMLMKLIB_FLAGS= -lstdc++
 
 RESULT=ocaml_somecode
 
-CXXFLAGS += -g2 -I. -I../.. -I$(OCAMLLIB) -std=gnu++11 -fno-rtti
+CXXFLAGS += -g2 -I. -I../.. -I$(OCAMLLIB) -std=gnu++20 -fno-rtti
 
 PACKS = result,threads,oUnit
 

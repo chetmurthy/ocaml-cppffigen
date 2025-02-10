@@ -20,6 +20,9 @@ int32_to_int(int32_t n) ;
 std::tuple< std::string, int >
   bar(std::string s, int n);
 
+std::string
+size_t_to_string(size_t n);
+
 } // namespace somecode
 
 #endif

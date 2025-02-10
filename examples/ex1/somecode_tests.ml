@@ -16,6 +16,11 @@ let all = "all_tests" >:::
   ; "somecode_bar" >::
       (fun ctxt ->
 	assert_equal ("foo", 42) (Ocaml_somecode.somecode_bar "foo" 42))
+  ; "somecode_size_t_to_string" >::
+      (fun ctxt ->
+	assert_equal ~printer:(fun x -> x) "deadbeef" (Ocaml_somecode.somecode_size_t_to_string 0xdeadbeefL)
+      ; assert_equal ~printer:(fun x -> x) "deadbeefdeadbeef" (Ocaml_somecode.somecode_size_t_to_string 0xdeadbeefdeadbeefL)
+      )
   ]
   
 (* Run the tests in test suite *)
