@@ -3,6 +3,7 @@
 #include <tuple>
 #include <vector>
 #include <sstream>
+#include <cassert>
 
 #include "somecode.h"
 
@@ -38,6 +39,18 @@ size_t_to_string(size_t n) {
   std::string rv = sstream.str();
 
   return rv ;
+}
+
+WALRecoveryMode
+wal_recovery_mode_from_int(int n) {
+  switch (n) {
+  case 0: return WALRecoveryMode::kTolerateCorruptedTailRecords ;
+  case 1: return WALRecoveryMode::kAbsoluteConsistency;
+  case 2: return WALRecoveryMode::kPointInTimeRecovery;
+  case 3: return WALRecoveryMode::kSkipAnyCorruptedRecords;
+  default:
+    assert(false);
+  }
 }
 
 } // namespace somecode

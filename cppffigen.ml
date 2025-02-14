@@ -340,10 +340,13 @@ let gen_stanza_bodies tmap oc = function
   sentinel_type
   (fmt_cpptype cty) body
   | ML2CPP(cty, body) ->
-     Printf.fprintf oc "void ml2c(const value _mlvalue, %s *_cvaluep) {
+     let mlty = ctype2concretetype tmap cty in
+     let sentinel_type = concretetype_to_sentineltype tmap mlty in
+     Printf.fprintf oc "void ml2c(const %s& _s0, const value _mlvalue, %s *_cvaluep) {
   %s ;
 }
 "
+       sentinel_type
        (fmt_cpptype cty) body
   | FOREIGN(rtys, fname, argformals, body) ->
      let ml_rtyl = List.map (ctype2concretetype tmap) rtys in

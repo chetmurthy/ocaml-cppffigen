@@ -21,6 +21,11 @@ let all = "all_tests" >:::
 	assert_equal ~printer:(fun x -> x) "deadbeef" (Ocaml_somecode.somecode_size_t_to_string 0xdeadbeefL)
       ; assert_equal ~printer:(fun x -> x) "deadbeefdeadbeef" (Ocaml_somecode.somecode_size_t_to_string 0xdeadbeefdeadbeefL)
       )
+  ; "somecode_wal_recovery_mode_from_int" >::
+      (fun ctxt ->
+	assert_equal '\000' (Ocaml_somecode.somecode_wal_recovery_mode_from_int 0)
+       ; assert_equal '\003' (Ocaml_somecode.somecode_wal_recovery_mode_from_int 3)
+      )
   ]
   
 (* Run the tests in test suite *)

@@ -57,6 +57,11 @@
   (ML2CPP (ID wal_recovery_mode_t) "{ sentinel_INT _s0;
    char xx ; ml2c(_s0, _mlvalue, &xx); *_cvaluep = static_cast<somecode::WALRecoveryMode>(xx) ; }")
 
+   (FOREIGN
+    ((ID wal_recovery_mode_t))
+    somecode_wal_recovery_mode_from_int
+    (((PRIM INT) n))
+     "_res0 = somecode::wal_recovery_mode_from_int(n); ")
 
    )
   )

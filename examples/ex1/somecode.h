@@ -30,6 +30,9 @@ enum class WALRecoveryMode : char {
   kSkipAnyCorruptedRecords = 0x03,
 };
 
+WALRecoveryMode
+wal_recovery_mode_from_int(int n);
+
 } // namespace somecode
 
 #endif
