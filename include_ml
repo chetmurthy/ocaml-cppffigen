@@ -9,9 +9,18 @@
 #require "bos";;
 #require "result";;
 #load "cppffigen.cmo";;
+#load "cppffigen_main.cmo";;
 
 "examples/ex1/somecode-ffi.idl" |>  Fpath.v |> Bos.OS.File.read |> Result.get_ok |> Sexplib.Sexp.of_string |> Cppffigen.t_of_sexp;;
 
+open Cppffigen ;;
+open Cppffigen_main ;;
+
+#trace concretetype_to_sentineltype ;; 
+#trace CPP.gen_stanza_bodies ;;
+#trace ctype2concretetype ;;
+
+gen_f (open_in "examples/ex1/somecode-ffi.idl") stdout `CPP ;;
 
 (*
 ;;; Local Variables: ***

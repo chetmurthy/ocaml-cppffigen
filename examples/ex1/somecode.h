@@ -23,6 +23,13 @@ std::tuple< std::string, int >
 std::string
 size_t_to_string(size_t n);
 
+enum class WALRecoveryMode : char {
+  kTolerateCorruptedTailRecords = 0x00,
+  kAbsoluteConsistency = 0x01,
+  kPointInTimeRecovery = 0x02,
+  kSkipAnyCorruptedRecords = 0x03,
+};
+
 } // namespace somecode
 
 #endif

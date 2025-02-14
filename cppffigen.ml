@@ -15,6 +15,7 @@ type primtype =
   | INT32 | UINT32
   | CHAR | UCHAR
   | BOOL
+  | STRING
       [@@deriving sexp]
 
 type t =
@@ -32,6 +33,7 @@ module MLTYPE = struct
   | CHAR
   | BOOL
   | NATIVEINT
+  | STRING
   | ARRAY of concrete_type
   | TUPLE of concrete_type list
   | OPTION of concrete_type
@@ -45,6 +47,7 @@ module MLTYPE = struct
     | CHAR -> "char"
     | BOOL -> "bool"
     | NATIVEINT -> "nativeint"
+    | STRING -> "string"
     | ARRAY ty  -> Printf.sprintf "(%s array)" (crec ty)
     | TUPLE l  -> Printf.sprintf "(%s)" (String.concat " * " (List.map crec l))
     | OPTION ty  -> Printf.sprintf "(%s option)" (crec ty)
@@ -113,15 +116,74 @@ let prim2mltype = function
   | (INT32 | UINT32) -> MLTYPE.INT32
   | (CHAR | UCHAR) -> MLTYPE.CHAR
   | BOOL -> MLTYPE.BOOL
+module TMAP = struct
+  type entry_t = {
+      stanza : stanza_t
+    ; id : string
+    ; cpptype : CPPTYPE.t
+    ; mltype : MLTYPE.t
+    ; concretetype : MLTYPE.concrete_type
+    }
+  type t = (string * entry_t) list
+
+  let typedef_to_entry tmap = function
+      (TYPEDEF t) as stanza ->
+       if List.mem_assoc t.name tmap then
+         failwith (Printf.sprintf "typename %s already previously typedef-ed" t.name) ;
+       { id = t.name
+       ; cpptype = t.cpptype
+       ; mltype = t.mltype
+       ; stanza
+       ; concretetype =
+           match t.mltype with
+             MLTYPE.CONCRETE t -> t
+           | ABSTRACT s -> MLTYPE.OTHER s
+       }
+
+  let struct_to_entry tmap = function
+      (STRUCT t) as stanza ->
+       if List.mem_assoc t.Struct.name tmap then
+         failwith (Printf.sprintf "struct name %s already previously typedef-ed" t.Struct.name) ;
+       let concretetype = MLTYPE.OTHER (Printf.sprintf "%s.t" t.Struct.modname) in
+       {
+         id = t.Struct.name
+       ; cpptype = CPPTYPE.ID t.Struct.name
+       ; mltype = MLTYPE.CONCRETE concretetype
+       ; concretetype
+       ; stanza
+       }
+
+  let mk t =
+    let rec mkrec tmap = function
+        [] -> tmap
+      | h::t ->
+         match h with
+           STRUCT _ ->
+            let e = struct_to_entry tmap h in
+            mkrec ((e.id, e)::tmap) t
+         | TYPEDEF _ ->
+            let e = typedef_to_entry tmap h in
+            mkrec ((e.id, e)::tmap) t
+         | _ -> mkrec tmap t
+    in
+    mkrec [] t
+
+  let lookup tmap id =
+    match List.assoc id tmap with
+      e -> e
+    | exception Not_found ->
+       failwith (Printf.sprintf "id %s not found in type-map" id)
+
+end
 
 let ctype2concretetype tmap cty : MLTYPE.concrete_type =
   let rec crec = function
     | CPPTYPE.PRIM t -> prim2mltype t
-    | ID "std::string" -> MLTYPE.(OTHER "string")
+    | ID "std::string" -> MLTYPE.STRING
     | ID s -> begin
       if not (List.mem_assoc s tmap) then
 	failwith (Printf.sprintf "typename %s not found in map" s) ;
-      List.assoc s tmap
+      (List.assoc s tmap).TMAP.concretetype
     end
     | TYCON("std::vector",[cty]) -> MLTYPE.(ARRAY (crec cty))
     | TYCON("std::tuple",[a;b]) -> MLTYPE.(TUPLE [crec a; crec b])
@@ -150,6 +212,24 @@ let fmt_cpptype ty =
        Printf.sprintf "%s< %s >" id (String.concat ", " (List.map frec l))
     | PRIM t -> fmt_primcpptype t
   in frec ty
+
+let concretetype_to_sentineltype tmap mlty =
+  let rec convrec = function
+    MLTYPE.INT -> "sentinel_INT"
+  | INT32 -> "sentinel_INT32"
+  | INT64 -> "sentinel_INT64"
+  | CHAR -> "sentinel_INT"
+  | BOOL -> "sentinel_INT"
+  | NATIVEINT -> "sentinel_NATIVEINT"
+  | STRING -> "sentinel_GENERIC"
+  | ARRAY ty -> Printf.sprintf "sentinel_ARRAY<%s>" (convrec ty)
+  | TUPLE [t1;t2] -> Printf.sprintf "sentinel_TUPLE2<%s,%s>" (convrec t1) (convrec t2)
+  | TUPLE [t1;t2;t3] -> Printf.sprintf "sentinel_TUPLE3<%s,%s,%s>" (convrec t1) (convrec t2) (convrec t3)
+  | TUPLE _ -> failwith "mltype_to_sentineltype(tuple length > 2): unimplemented"
+  | OPTION ty -> Printf.sprintf "sentinel_OPTION<%s>" (convrec ty)
+  | OTHER id -> convrec (TMAP.lookup tmap id).TMAP.concretetype
+  in
+  convrec mlty
 
 let expand_struct tmap { Struct.modname; name ; members } =
   [
@@ -207,6 +287,7 @@ type t = {
   stanzas : stanza_t  list;
 } [@@deriving sexp]
 
+
 module CPP = struct
 
 let prologues t =
@@ -219,32 +300,22 @@ let epilogues t =
   | CPP(EPILOGUE, s) -> [s]
   | _ -> []) t.stanzas)
 
-let gen_stanza_forwards oc = function
+let gen_stanza_forwards tmap oc = function
   | (CPP _| ML _ | MLI _| FOREIGN _) -> ()
   | TYPEDEF t ->
      Printf.fprintf oc "typedef %s %s;\n" (fmt_cpptype t.cpptype) t.name ;
   | CPP2ML(cty, _) ->
-     Printf.fprintf oc "value c2ml(const %s& _cvalue);\n" (fmt_cpptype cty)
+     let mlty = ctype2concretetype tmap cty in
+     let sentinel_type = concretetype_to_sentineltype tmap mlty in
+     Printf.fprintf oc "value c2ml(const %s& _s0, const %s& _cvalue);\n"
+       sentinel_type
+       (fmt_cpptype cty)
   | ML2CPP(cty, _) ->
-     Printf.fprintf oc "void ml2c(const value _mlvalue, %s *_cvaluep);\n" (fmt_cpptype cty)
-
-let rec concretetype_to_sentineltype = function
-    MLTYPE.INT -> "sentinel_INT"
-  | INT32 -> "sentinel_INT32"
-  | INT64 -> "sentinel_INT64"
-  | CHAR -> "sentinel_CHAR"
-  | BOOL -> "sentinel_BOOL"
-  | NATIVEINT -> "sentinel_NATIVEINT"
-  | ARRAY t -> Printf.sprintf "sentinel_ARRAY<%s>" (concretetype_to_sentineltype t)
-  | TUPLE [t;u] -> Printf.sprintf "sentinel_TUPLE2<%s,%s>"
-                     (concretetype_to_sentineltype t) (concretetype_to_sentineltype u)
-  | TUPLE [t;u;v] -> 
-     Printf.sprintf "sentinel_TUPLE3<%s,%s,%s>"
-       (concretetype_to_sentineltype t)
-       (concretetype_to_sentineltype u)
-       (concretetype_to_sentineltype v)
-  | OPTION t -> Printf.sprintf "sentinel_OPTION<%s>" (concretetype_to_sentineltype t)
-  | OTHER _ -> "sentinel_GENERIC"
+     let mlty = ctype2concretetype tmap cty in
+     let sentinel_type = concretetype_to_sentineltype tmap mlty in
+     Printf.fprintf oc "void ml2c(const %s& _s0, const value _mlvalue, %s *_cvaluep);\n"
+       sentinel_type
+       (fmt_cpptype cty)
 
 let arg_snippets tmap (cty, cid) =
   let ml_cty = ctype2concretetype tmap cty in
@@ -257,13 +328,17 @@ let gen_stanza_bodies tmap oc = function
   | CPP(HERE, s) -> output_string oc s
   | CPP _  -> ()
   | CPP2ML(cty, body) ->
-     Printf.fprintf oc "value c2ml(const %s& _cvalue) {
+     let mlty = ctype2concretetype tmap cty in
+     let sentinel_type = concretetype_to_sentineltype tmap mlty in
+     Printf.fprintf oc "value c2ml(const %s& _s0, const %s& _cvalue) {
   CAMLparam0();
   CAMLlocal1(_mlvalue);
   %s ;
   CAMLreturn(_mlvalue);
 }
-" (fmt_cpptype cty) body
+"
+  sentinel_type
+  (fmt_cpptype cty) body
   | ML2CPP(cty, body) ->
      Printf.fprintf oc "void ml2c(const value _mlvalue, %s *_cvaluep) {
   %s ;
@@ -300,7 +375,7 @@ let gen_stanza_bodies tmap oc = function
   (String.concat "\n  " (List.map (fun (cty, cid, mlid) ->
     Printf.sprintf "%s %s;\n  %s _s_%s;\n  ml2c(_s_%s, %s, &%s);"
       (fmt_cpptype cty) cid
-      (concretetype_to_sentineltype (ctype2concretetype tmap cty)) cid
+      (concretetype_to_sentineltype tmap (ctype2concretetype tmap cty)) cid
       cid mlid cid) args))
   (match rtys with [] -> "" | ctys ->
     String.concat "\n  " (List.mapi (fun i cty ->
@@ -311,14 +386,14 @@ let gen_stanza_bodies tmap oc = function
   (* C->ML *)
   (match rtys with [] -> "" | l ->
     let res_vars = List.mapi (fun i _ -> Printf.sprintf "_res%d" i) ml_rtyl in
-    let sentinel_types = List.map concretetype_to_sentineltype ml_rtyl in
+    let sentinel_types = List.map (concretetype_to_sentineltype tmap) ml_rtyl in
     let sentinel_vars = List.mapi (fun i _ -> Printf.sprintf "_s%d" i) sentinel_types in
     let sentinel_decls = List.mapi (fun i sty -> Printf.sprintf "%s _s%d" sty i) sentinel_types in
     let res_assignment =
       Printf.sprintf "  _mlv_res = c2ml(%s);" (String.concat ", " (sentinel_vars@res_vars)) in
     String.concat ";\n" (sentinel_decls@[res_assignment]))
 
-let gen (typedecls, tmap) oc t =
+let gen tmap oc t =
 output_string oc "
 #include <stddef.h>
 #include <string.h>
@@ -331,7 +406,7 @@ output_string oc "
 #include <caml/bigarray.h>
 " ;
   List.iter (output_string oc) (prologues t) ;
-  List.iter (gen_stanza_forwards oc) t.stanzas ;
+  List.iter (gen_stanza_forwards tmap oc) t.stanzas ;
   output_string oc "
 #include \"cppffi.inc\"
 ";
@@ -354,28 +429,13 @@ let epilogues t =
   | ML(EPILOGUE, s) -> [s]
   | _ -> []) t.stanzas)
 
-let setup_typedecls t =
-  let tmap = ref [] in
-  List.iter (function
-  | TYPEDEF t ->
-     if List.mem_assoc t.name !tmap then
-       failwith (Printf.sprintf "typenae %s already previously typedef-ed" t.name) ;
-    push tmap (t.name, t.mltype)
-  | STRUCT t ->
-     if List.mem_assoc t.Struct.name !tmap then
-       failwith (Printf.sprintf "struct name %s already previously typedef-ed" t.Struct.name) ;
-    push tmap (t.Struct.name, MLTYPE.CONCRETE (OTHER (Printf.sprintf "%s.t" t.Struct.modname)))
-  | _ -> ()
-  ) t.stanzas ;
-  !tmap
-
 let gen_typedecls ~ml oc tmap =
   let l = tmap in
   Printf.fprintf oc (if ml then "module Types = struct\n" else "module Types : sig\n");
   Printf.fprintf oc "type %s\n"
-    (String.concat "\nand " (List.map (function
-    | (id, MLTYPE.CONCRETE s) -> Printf.sprintf "%s = %s" id (MLTYPE.concrete_to_mlstring s)
-    | (id, ABSTRACT s) ->  s
+    (String.concat "\nand " (List.map (fun (id, e) -> match e.TMAP.mltype with
+    | MLTYPE.CONCRETE s -> Printf.sprintf "%s = %s" id (MLTYPE.concrete_to_mlstring s)
+    | ABSTRACT s ->  s
      ) l)) ;
   Printf.fprintf oc "end\n" ;
   ()
@@ -399,9 +459,9 @@ let gen_stanza tmap oc = function
 	  (List.map (fun t -> MLTYPE.concrete_to_mlstring (ctype2concretetype tmap t)) l))
        name
 
-let gen (typedecls, tmap) oc t =
+let gen tmap oc t =
   List.iter (output_string oc) (prologues t) ;
-  gen_typedecls ~ml:true oc typedecls ;
+  gen_typedecls ~ml:true oc tmap ;
   Printf.fprintf oc "open Types\n" ;
   List.iter (gen_stanza tmap oc) t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
@@ -422,9 +482,9 @@ let epilogues t =
 let gen_typedecls = ML.gen_typedecls ~ml:false
 let gen_stanza = ML.gen_stanza
     
-  let gen (typedecls, tmap) oc t =
+  let gen tmap oc t =
   List.iter (output_string oc) (prologues t) ;
-  gen_typedecls oc typedecls ;
+  gen_typedecls oc tmap ;
   Printf.fprintf oc "open Types\n" ;
   List.iter (gen_stanza tmap oc) t.stanzas ;
   List.iter (output_string oc) (epilogues t) ;
