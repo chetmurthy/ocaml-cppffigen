@@ -6,7 +6,7 @@ let snd3 (a,b,c)  = b
 let third3 (a,b,c)  = c
 let push l x = (l := x :: !l)
 
-let version = "0.002"
+let version = "0.003"
 
 module CPPTYPE = struct
 type primtype =

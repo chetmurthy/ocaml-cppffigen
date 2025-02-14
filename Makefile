@@ -1,11 +1,16 @@
 
+PACKAGES=camlp5,pa_ppx.deriving_plugins.sexp,sexplib,cmdliner
+SYNTAX=camlp5o
+
+OCAMLCFLAGS= -package $(PACKAGES) -syntax $(SYNTAX) -g
+
 all: cppffigen cppffigen_example
 
 cppffigen: cppffigen.ml cppffigen_main.ml
-	ocamlfind ocamlc -package ppx_sexp_conv,pcre,sexplib,cmdliner -linkall -linkpkg -o cppffigen $^
+	ocamlfind ocamlc $(OCAMLCFLAGS) -linkall -linkpkg -o cppffigen $^
 
 cppffigen_example: cppffigen.ml cppffigen_example.ml
-	ocamlfind ocamlc -package ppx_sexp_conv,pcre,sexplib,cmdliner -linkall -linkpkg -o cppffigen_example $^
+	ocamlfind ocamlc $(OCAMLCFLAGS) -linkall -linkpkg -o cppffigen_example $^
 
 test: all
 	make -C examples/ex1 clean all test

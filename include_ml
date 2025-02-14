@@ -1,8 +1,16 @@
 (* Copyright 2016 Chetan Murthy *)
+#use "topfind.camlp5";;
+#camlp5o ;;
 
-#use "../include_ml";;
 
-#require "cppffigen";;
+#require "pa_ppx.deriving_plugins.std";;
+#require "sexplib";;
+#require "cmdliner";;
+#require "bos";;
+#require "result";;
+#load "cppffigen.cmo";;
+
+"examples/ex1/somecode-ffi.idl" |>  Fpath.v |> Bos.OS.File.read |> Result.get_ok |> Sexplib.Sexp.of_string |> Cppffigen.t_of_sexp;;
 
 
 (*

@@ -5,12 +5,12 @@ foreign-function-interface generator for Ocaml.  Please use at your own risk.
 
 ## Installation
 
-This library requires ppx_sexp_conv,
-pcre, sexplib, cmdliner packages.  The easiest way to build is to have
+This library requires pa_ppx.deriving_plugins.sexp,
+ sexplib, cmdliner packages.  The easiest way to build is to have
 installed the opam package manager; then it suffices to run:
 
 ```
-opam install ppx_deriving ppx_sexp_conv sexplib cmdliner pcre ounit
+opam install ppx_deriving pa_ppx.deriving_plugins.sexp sexplib cmdliner ounit
 make all install
 ```
 

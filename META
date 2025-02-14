@@ -1,4 +1,4 @@
 version = "2022-01-22"
 description = "C++ FFI generator"
-requires = "ppx_sexp_conv pcre sexplib cmdliner"
+requires = "pa_ppx.deriving_plugins.std sexplib cmdliner"
 
