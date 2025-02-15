@@ -116,6 +116,7 @@ let prim2mltype = function
   | (INT32 | UINT32) -> MLTYPE.INT32
   | (CHAR | UCHAR) -> MLTYPE.CHAR
   | BOOL -> MLTYPE.BOOL
+  | STRING -> MLTYPE.STRING
 module TMAP = struct
   type entry_t = {
       stanza : stanza_t
@@ -203,6 +204,7 @@ let fmt_primcpptype = function
   | CHAR -> "char"
   | UCHAR -> "unsigned char"
   | BOOL -> "bool"
+  | STRING -> "std::string"
   
 let fmt_cpptype ty =
   let rec frec = function

@@ -40,6 +40,11 @@ roundtrip_int_option(const std::optional<int>& n) {
   return n ;
 }
 
+std::optional<std::string>
+roundtrip_string_option(const std::optional<std::string>& n) {
+  return n ;
+}
+
 std::tuple< std::string, int >
 bar(std::string s, int n) {
   return std::tuple< std::string, int>{ s, n } ;

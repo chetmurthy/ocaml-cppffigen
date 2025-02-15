@@ -42,6 +42,12 @@
      (((TYCON std::optional ((PRIM INT))) n))
      "_res0 = somecode::roundtrip_int_option(n); ")
 
+    (FOREIGN
+     ((TYCON std::optional ((PRIM STRING))))
+     somecode_roundtrip_string_option
+     (((TYCON std::optional ((PRIM STRING))) n))
+     "_res0 = somecode::roundtrip_string_option(n); ")
+
    (FOREIGN
     ((PRIM INT32))
     somecode_int_to_int32

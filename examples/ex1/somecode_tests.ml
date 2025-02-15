@@ -35,6 +35,8 @@ let all = "all_tests" >:::
       (fun ctxt ->
 	assert_equal None (Ocaml_somecode.somecode_roundtrip_int_option None)
       ; assert_equal (Some 1) (Ocaml_somecode.somecode_roundtrip_int_option (Some 1))
+      ; assert_equal None (Ocaml_somecode.somecode_roundtrip_string_option None)
+      ; assert_equal (Some "foo") (Ocaml_somecode.somecode_roundtrip_string_option (Some "foo"))
       )
   ]
   
