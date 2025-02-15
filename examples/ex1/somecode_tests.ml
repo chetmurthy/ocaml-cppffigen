@@ -26,6 +26,11 @@ let all = "all_tests" >:::
 	assert_equal '\000' (Ocaml_somecode.somecode_wal_recovery_mode_from_int 0)
        ; assert_equal '\003' (Ocaml_somecode.somecode_wal_recovery_mode_from_int 3)
       )
+  ; "somecode_option_1" >::
+      (fun ctxt ->
+	assert_equal None (Ocaml_somecode.somecode_int32_option_to_int_option None)
+      ; assert_equal (Some 1) (Ocaml_somecode.somecode_int32_option_to_int_option (Some 1l))
+      )
   ]
   
 (* Run the tests in test suite *)

@@ -25,6 +25,16 @@ int32_to_int(int32_t n) {
   return n ;
 }
 
+std::optional<int>
+int32_option_to_int_option(const std::optional<int32_t>& n) {
+  if (n.has_value()) {
+    return std::optional<int>(n.value()) ;
+  }
+  else {
+    return std::optional<int>() ;
+  }
+}
+
 std::tuple< std::string, int >
 bar(std::string s, int n) {
   return std::tuple< std::string, int>{ s, n } ;

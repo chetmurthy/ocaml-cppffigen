@@ -2,6 +2,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <optional>
 
 #ifndef somecode_h_included
 #define somecode_h_included
@@ -16,6 +17,9 @@ int_to_int32(int n) ;
 
 int
 int32_to_int(int32_t n) ;
+
+std::optional<int>
+int32_option_to_int_option(const std::optional<int32_t>& n) ;
 
 std::tuple< std::string, int >
   bar(std::string s, int n);

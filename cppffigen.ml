@@ -188,7 +188,7 @@ let ctype2concretetype tmap cty : MLTYPE.concrete_type =
     | TYCON("std::vector",[cty]) -> MLTYPE.(ARRAY (crec cty))
     | TYCON("std::tuple",[a;b]) -> MLTYPE.(TUPLE [crec a; crec b])
     | TYCON("std::tuple",l) -> MLTYPE.(TUPLE (List.map crec l))
-    | PTR (TYCON("Opt",[cty])) -> MLTYPE.(OPTION (crec cty))
+    | TYCON("std::optional",[cty]) -> MLTYPE.(OPTION (crec cty))
     | TYCON _ -> failwith "unrecognized C++ type-constructor"
     | PTR _ -> failwith "cannot map a PTR type to an ML type (should use typedef)"
   in  crec cty

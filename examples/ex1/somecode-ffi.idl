@@ -28,13 +28,19 @@
     ((PRIM INT))
     somecode_int32_to_int
     (((PRIM INT32) n))
-     "_res0 = n; ")
+     "_res0 = somecode::int32_to_int(n); ")
+
+    (FOREIGN
+     ((TYCON std::optional ((PRIM INT))))
+     somecode_int32_option_to_int_option
+     (((TYCON std::optional ((PRIM INT32))) n))
+     "_res0 = somecode::int32_option_to_int_option(n); ")
 
    (FOREIGN
     ((PRIM INT32))
     somecode_int_to_int32
     (((PRIM INT) n))
-     "_res0 = n; ")
+     "_res0 = somecode::int_to_int32(n); ")
 
    (FOREIGN
     ((TYCON "std::tuple" ((ID std::string) (PRIM INT))))
