@@ -35,6 +35,11 @@ int32_option_to_int_option(const std::optional<int32_t>& n) {
   }
 }
 
+std::optional<int>
+roundtrip_int_option(const std::optional<int>& n) {
+  return n ;
+}
+
 std::tuple< std::string, int >
 bar(std::string s, int n) {
   return std::tuple< std::string, int>{ s, n } ;

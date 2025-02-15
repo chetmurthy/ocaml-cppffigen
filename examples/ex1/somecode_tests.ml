@@ -31,6 +31,11 @@ let all = "all_tests" >:::
 	assert_equal None (Ocaml_somecode.somecode_int32_option_to_int_option None)
       ; assert_equal (Some 1) (Ocaml_somecode.somecode_int32_option_to_int_option (Some 1l))
       )
+  ; "somecode_roundtrip" >::
+      (fun ctxt ->
+	assert_equal None (Ocaml_somecode.somecode_roundtrip_int_option None)
+      ; assert_equal (Some 1) (Ocaml_somecode.somecode_roundtrip_int_option (Some 1))
+      )
   ]
   
 (* Run the tests in test suite *)
