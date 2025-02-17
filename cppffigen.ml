@@ -42,7 +42,7 @@ module MLTYPE = struct
 
   let tuple_type pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string " * ") pp1) l)
 
-  let rec concrete_to_mlstring pps cty =
+  let rec ppml_concrete pps cty =
     let rec crec pps = function
       INT -> {%fmt_pf|int|} pps
     | INT32 -> {%fmt_pf|int32|} pps
@@ -63,7 +63,7 @@ type t =
 
 let to_mlstring = function
     ABSTRACT s -> s
-  | CONCRETE cty -> {%fmt_str|$(cty | concrete_to_mlstring)|}
+  | CONCRETE cty -> {%fmt_str|$(cty | ppml_concrete)|}
 
 end
 
@@ -211,7 +211,7 @@ let fmt_primcpptype = function
   
 let comma_separated pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string ", ") pp1) l)
 
-let fmt_cpptype pps ty =
+let ppcpp_cpptype pps ty =
   let rec frec pps = function
     | CPPTYPE.ID s -> {%fmt_pf|$(s)|} pps
     | PTR t -> {%fmt_pf|$(t | frec)*|} pps
@@ -238,9 +238,9 @@ let concretetype_to_sentineltype tmap mlty =
   in
   {%fmt_str|$(mlty | convrec)|}
 
-let pp_ml_field_decl tmap pps (cty,n) = {%fmt_pf|$(n) : $(ctype2concretetype tmap cty | MLTYPE.concrete_to_mlstring) ;|} pps
+let pp_ml_field_decl tmap pps (cty,n) = {%fmt_pf|$(n) : $(ctype2concretetype tmap cty | MLTYPE.ppml_concrete) ;|} pps
 
-let pp_cpp_field_decl pps (cty, n) = {%fmt_pf|  $(cty | fmt_cpptype) $(n) ;|} pps
+let pp_cpp_field_decl pps (cty, n) = {%fmt_pf|  $(cty | ppcpp_cpptype) $(n) ;|} pps
 
 let expand_struct tmap { Struct.modname; name ; members } =
   [
@@ -310,18 +310,18 @@ let epilogues t =
 let gen_stanza_forwards tmap pps = function
   | (CPP _| ML _ | MLI _| FOREIGN _) -> ()
   | TYPEDEF t ->
-     {%fmt_pf|typedef $(t.cpptype | fmt_cpptype) $(t.name);
+     {%fmt_pf|typedef $(t.cpptype | ppcpp_cpptype) $(t.name);
 |} pps
 
   | CPP2ML(cty, _) ->
      let mlty = ctype2concretetype tmap cty in
      let sentinel_type = concretetype_to_sentineltype tmap mlty in
-       {%fmt_pf|value c2ml(const $(sentinel_type)& _s0, const $(cty | fmt_cpptype)& _cvalue);
+       {%fmt_pf|value c2ml(const $(sentinel_type)& _s0, const $(cty | ppcpp_cpptype)& _cvalue);
 |} pps
   | ML2CPP(cty, _) ->
      let mlty = ctype2concretetype tmap cty in
      let sentinel_type = concretetype_to_sentineltype tmap mlty in
-       {%fmt_pf|void ml2c(const $(sentinel_type)& _s0, const value _mlvalue, $(cty | fmt_cpptype) *_cvaluep);
+       {%fmt_pf|void ml2c(const $(sentinel_type)& _s0, const value _mlvalue, $(cty | ppcpp_cpptype) *_cvaluep);
 |} pps
 
 let fmt_list_i ~sep pp1 pps l =
@@ -352,7 +352,7 @@ let gen_stanza_bodies tmap pps = function
   | CPP2ML(cty, body) ->
      let mlty = ctype2concretetype tmap cty in
      let sentinel_type = concretetype_to_sentineltype tmap mlty in
-       {%fmt_pf|value c2ml(const $(sentinel_type)& _s0, const $(cty | fmt_cpptype)& _cvalue) {
+       {%fmt_pf|value c2ml(const $(sentinel_type)& _s0, const $(cty | ppcpp_cpptype)& _cvalue) {
   CAMLparam0();
   CAMLlocal1(_mlvalue);
   $(body) ;
@@ -363,7 +363,7 @@ let gen_stanza_bodies tmap pps = function
   | ML2CPP(cty, body) ->
      let mlty = ctype2concretetype tmap cty in
      let sentinel_type = concretetype_to_sentineltype tmap mlty in
-       {%fmt_pf|void ml2c(const $(sentinel_type)& _s0, const value _mlvalue, $(cty | fmt_cpptype) *_cvaluep) {
+       {%fmt_pf|void ml2c(const $(sentinel_type)& _s0, const value _mlvalue, $(cty | ppcpp_cpptype) *_cvaluep) {
   $(body) ;
 }
 |} pps
@@ -378,12 +378,12 @@ let gen_stanza_bodies tmap pps = function
        (cty, cid, Printf.sprintf "_mlv_%s" cid)
      ) argformals in
      let pp_arg_conversion pps (cty, cid, mlid) =
-       {%fmt_pf|$(cty | fmt_cpptype) $(cid);
+       {%fmt_pf|$(cty | ppcpp_cpptype) $(cid);
   ${concretetype_to_sentineltype tmap (ctype2concretetype tmap cty)} _s_$(cid);
   ml2c(_s_$(cid), $(mlid), &$(cid));|} pps in
 
      let pp_rty_decls_i pps (i, cty) =
-       {%fmt_pf|$(cty | fmt_cpptype) _res$(i | %d);|} pps in
+       {%fmt_pf|$(cty | ppcpp_cpptype) _res$(i | %d);|} pps in
 
      let res_var (i,rty) = {%fmt_str|_res$(i|%d)|} in
 
@@ -438,7 +438,7 @@ let epilogues t =
 
 let pp_typedecl pps (lid, e) =
   match e.TMAP.mltype with
-  | MLTYPE.CONCRETE s ->  {%fmt_pf|$(lid) = $(s | MLTYPE.concrete_to_mlstring)|} pps
+  | MLTYPE.CONCRETE s ->  {%fmt_pf|$(lid) = $(s | MLTYPE.ppml_concrete)|} pps
   | ABSTRACT s ->  {%fmt_pf|$(s)|} pps
 
 let gen_typedecls ~ml pps tmap =
@@ -453,13 +453,13 @@ let pp_argformals tmap pps argformals =
   | [] -> {%fmt_pf|unit|} pps
   | l ->
      let l = List.map fst l in
-     {%fmt_pf|${List.map (ctype2concretetype tmap) l | list ~sep:(const string " -> ") MLTYPE.concrete_to_mlstring}|} pps
+     {%fmt_pf|${List.map (ctype2concretetype tmap) l | list ~sep:(const string " -> ") MLTYPE.ppml_concrete}|} pps
 
 let pp_rtys tmap pps rtys =
   match rtys with
     [] -> {%fmt_pf|unit|} pps
   | l ->
-     {%fmt_pf|${List.map (ctype2concretetype tmap) l | list ~sep:(const string " * ") MLTYPE.concrete_to_mlstring}|} pps
+     {%fmt_pf|${List.map (ctype2concretetype tmap) l | list ~sep:(const string " * ") MLTYPE.ppml_concrete}|} pps
 
 let gen_stanza tmap pps = function
   | (CPP _|CPP2ML _|ML2CPP _|MLI _) -> ()
