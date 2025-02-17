@@ -12,6 +12,7 @@ depends: [
   "pa_ppx" { >= "0.17" }
   "sexplib" { >= "v0.14.0" }
   "cmdliner" { >= "1.0.4" }
+  "pa_ppx_fmtformat"
 ]
 build: [
   [make "all"]

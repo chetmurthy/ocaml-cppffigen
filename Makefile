@@ -3,14 +3,19 @@ PACKAGES=camlp5,pa_ppx.deriving_plugins.sexp,sexplib,cmdliner
 SYNTAX=camlp5o
 
 OCAMLCFLAGS= -package $(PACKAGES) -syntax $(SYNTAX) -g
+YAWRAP=ocamlfind camlp5-buildscripts/ya-wrap-ocamlfind
+OCAMLC=$(YAWRAP) ocamlfind ocamlc
 
 all: cppffigen cppffigen_example
 
-cppffigen: cppffigen.ml cppffigen_main.ml
-	ocamlfind ocamlc $(OCAMLCFLAGS) -linkall -linkpkg -o cppffigen $^
+cppffigen: cppffigen.cmo cppffigen_main.cmo
+	$(OCAMLC) $(OCAMLCFLAGS) -linkall -linkpkg -o cppffigen $^
 
-cppffigen_example: cppffigen.ml cppffigen_example.ml
-	ocamlfind ocamlc $(OCAMLCFLAGS) -linkall -linkpkg -o cppffigen_example $^
+cppffigen_example: cppffigen.cmo cppffigen_example.cmo
+	$(OCAMLC) $(OCAMLCFLAGS) -linkall -linkpkg -o cppffigen_example $^
+
+.ml.cmo:
+	$(OCAMLC) $(OCAMLCFLAGS) -c $<
 
 test: all
 	make -C examples/ex1 clean all test
@@ -25,3 +30,4 @@ install: all
 uninstall::
 	ocamlfind remove cppffigen
 
+.SUFFIXES: .cmo .cmi .ml .mll .mly .mli .cmx .cma .cmxa .cmt .cmti
