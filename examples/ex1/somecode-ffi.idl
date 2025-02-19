@@ -116,6 +116,23 @@
      " _res0 = st ;"
      )
 
+  (TYPEDEF
+   ((mltype (CONCRETE INT64))
+   (cpptype (ID short))
+   (name short_t)))
+
+ (CPP2ML (ID short_t)
+  "_mlvalue = c2ml(sentinel_INT64(),static_cast<int64_t>(_cvalue));")
+ (ML2CPP (ID short_t)
+  "{ int64_t xx ; ml2c(sentinel_INT64(), _mlvalue, &xx); *_cvaluep = static_cast<short>(xx) ; }")
+
+    (FOREIGN
+     ((ID short_t))
+     somecode_roundtrip_short_t
+     (((ID short_t) n))
+     "_res0 = n; ")
+
+
    )
   )
  )
