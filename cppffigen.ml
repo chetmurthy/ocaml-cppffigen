@@ -3,12 +3,27 @@ open Pa_ppx_utils
 open Sexplib
 open Sexplib.Std
 
+let version = "0.003"
+
 let fst3 (a,b,c)  = a
 let snd3 (a,b,c)  = b
 let third3 (a,b,c)  = c
 let push l x = (l := x :: !l)
 
-let version = "0.003"
+let fmt_list_i ~sep pp1 pps l =
+  let pairs = List.mapi (fun i x -> (i,x)) l in
+  Fmt.list ~sep pp1 pps pairs
+
+let prepend firstpp secondpp pps arg =
+  Fmt.(pf pps "%a%a" firstpp () secondpp arg)
+
+let append firstpp secondpp pps arg =
+  Fmt.(pf pps "%a%a" firstpp arg secondpp ())
+
+let if_nil ~nil ~list (pps : Format.formatter) l : unit =
+  if l = [] then
+    nil pps ()
+  else list pps l
 
 module CPPID = struct
 type t = CPPID of string
@@ -343,20 +358,22 @@ ${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }} ;
       cpptype = ID cppid ;
       mltype = CONCRETE(OTHER mlid) ;
     } ;
+    let ml2c_field pps (i, (cty, n)) =
+      let mlty = ctype2concretetype tmap cty in
+      let sentinel_type = concretetype_to_sentineltype tmap mlty in
+      {%fmt_pf|ml2c(${sentinel_type}(), Field(_mlvalue,${ i|%d }), &(_cvaluep->${n}));|} pps in
     ML2CPP(ID cppid,
-	   String.concat "\n  "
-	     (List.mapi (fun i (cty, n) ->
-	       Printf.sprintf "ml2c(Field(_mlvalue,%d), &(_cvaluep->%s));" i n) members)) ;
+           {%fmt_str|${members | fmt_list_i ~sep:(const string "\n  ") ml2c_field}|}
+      ) ;
+    let c2ml_field pps (i, (cty, n)) =
+      let mlty = ctype2concretetype tmap cty in
+      let sentinel_type = concretetype_to_sentineltype tmap mlty in
+      {%fmt_pf|Store_field(_mlvalue, ${ i|%d }, c2ml(${sentinel_type}(), _cvalue.${n}));|} pps in
     CPP2ML(ID cppid,
-	   Printf.sprintf "
-  _mlvalue = caml_alloc(%d, 0) ;
-%s
-"
-	     (List.length members)
-	     (String.concat "\n"
-		(List.mapi (fun i (cty, n) ->
-		  Printf.sprintf "  Store_field(_mlvalue, %d, c2ml(_cvalue.%s));" i n)
-		   members))) ;
+           {%fmt_str|
+  _mlvalue = caml_alloc(${List.length members|%d}, 0) ;
+  ${ members| fmt_list_i ~sep:(const string "\n  ") c2ml_field }|}
+) ;
   ]
 
 type t = {
@@ -393,20 +410,6 @@ let gen_stanza_forwards tmap pps = function
        {%fmt_pf|void ml2c(const $(sentinel_type)& _s0, const value _mlvalue, $(cty | ppcpp_cpptype) *_cvaluep);
 |} pps
 
-let fmt_list_i ~sep pp1 pps l =
-  let pairs = List.mapi (fun i x -> (i,x)) l in
-  Fmt.list ~sep pp1 pps pairs
-
-let prepend firstpp secondpp pps arg =
-  Fmt.(pf pps "%a%a" firstpp () secondpp arg)
-
-let append firstpp secondpp pps arg =
-  Fmt.(pf pps "%a%a" firstpp arg secondpp ())
-
-let if_nil ~nil ~list (pps : Format.formatter) l : unit =
-  if l = [] then
-    nil pps ()
-  else list pps l
 
 let arg_snippets tmap (cty, cid) =
   let ml_cty = ctype2concretetype tmap cty in

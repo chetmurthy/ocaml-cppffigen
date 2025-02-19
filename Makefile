@@ -31,3 +31,6 @@ uninstall::
 	ocamlfind remove cppffigen
 
 .SUFFIXES: .cmo .cmi .ml .mll .mly .mli .cmx .cma .cmxa .cmt .cmti
+
+cppffigen_main.cmo: cppffigen.cmi
+cppffigen_example.cmo: cppffigen.cmi

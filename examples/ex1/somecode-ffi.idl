@@ -88,10 +88,10 @@
        (
 	((PRIM BOOL) b)
 	((PRIM UCHAR) uc)
-;	((PRIM INT) n)
-;	((PRIM UINT64) nL)
-;	((ID std::string) s)
-;	((ID size_t) sz)
+	((PRIM INT) n)
+	((PRIM UINT64) nL)
+	((ID std::string) s)
+	((ID size_t) sz)
 	))))
 
 
