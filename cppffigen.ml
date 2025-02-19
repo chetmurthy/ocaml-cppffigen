@@ -353,19 +353,14 @@ ${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }} ;
 #endif
 |}
       ) ;
-    TYPEDEF {
-      name ;
-      cpptype = ID cppid ;
-      mltype = CONCRETE(OTHER mlid) ;
-    } ;
-    let ml2c_field pps (i, (cty, n)) =
+    (let ml2c_field pps (i, (cty, n)) =
       let mlty = ctype2concretetype tmap cty in
       let sentinel_type = concretetype_to_sentineltype tmap mlty in
       {%fmt_pf|ml2c(${sentinel_type}(), Field(_mlvalue,${ i|%d }), &(_cvaluep->${n}));|} pps in
     ML2CPP(ID cppid,
            {%fmt_str|${members | fmt_list_i ~sep:(const string "\n  ") ml2c_field}|}
-      ) ;
-    let c2ml_field pps (i, (cty, n)) =
+      )) ;
+    (let c2ml_field pps (i, (cty, n)) =
       let mlty = ctype2concretetype tmap cty in
       let sentinel_type = concretetype_to_sentineltype tmap mlty in
       {%fmt_pf|Store_field(_mlvalue, ${ i|%d }, c2ml(${sentinel_type}(), _cvalue.${n}));|} pps in
@@ -373,7 +368,7 @@ ${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }} ;
            {%fmt_str|
   _mlvalue = caml_alloc(${List.length members|%d}, 0) ;
   ${ members| fmt_list_i ~sep:(const string "\n  ") c2ml_field }|}
-) ;
+)) ;
   ]
 
 type t = {
@@ -451,8 +446,7 @@ let gen_stanza_bodies tmap pps = function
      ) argformals in
      let pp_arg_conversion pps (cty, cid, mlid) =
        {%fmt_pf|$(cty | ppcpp_cpptype) $(cid);
-  ${concretetype_to_sentineltype tmap (ctype2concretetype tmap cty)} _s_$(cid);
-  ml2c(_s_$(cid), $(mlid), &$(cid));|} pps in
+  ml2c(${concretetype_to_sentineltype tmap (ctype2concretetype tmap cty)}(), $(mlid), &$(cid));|} pps in
 
      let pp_rty_decls_i pps (i, cty) =
        {%fmt_pf|$(cty | ppcpp_cpptype) _res$(i | %d);|} pps in

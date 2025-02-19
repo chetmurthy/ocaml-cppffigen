@@ -82,6 +82,22 @@
      "_res0 = somecode::wal_recovery_mode_from_int(n); ")
 
     (STRUCT
+     ((modname ST0)
+      (name t)
+      (members
+       (
+	((PRIM BOOL) b)
+	((PRIM UCHAR) uc)
+	))))
+
+    (FOREIGN ((ID ST0_t))
+     somecode_roundtrip_ST0_t
+     (((ID ST0_t) st))
+     " _res0 = st ;"
+     )
+
+
+    (STRUCT
      ((modname ST)
       (name t)
       (members
@@ -93,6 +109,13 @@
 	((ID std::string) s)
 	((ID size_t) sz)
 	))))
+
+    (FOREIGN ((ID ST_t))
+     somecode_roundtrip_ST_t
+     (((ID ST_t) st))
+     " _res0 = st ;"
+     )
+
 
 
    )

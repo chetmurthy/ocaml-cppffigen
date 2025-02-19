@@ -33,10 +33,12 @@ let all = "all_tests" >:::
       )
   ; "somecode_roundtrip" >::
       (fun ctxt ->
-	assert_equal None (Ocaml_somecode.somecode_roundtrip_int_option None)
-      ; assert_equal (Some 1) (Ocaml_somecode.somecode_roundtrip_int_option (Some 1))
-      ; assert_equal None (Ocaml_somecode.somecode_roundtrip_string_option None)
-      ; assert_equal (Some "foo") (Ocaml_somecode.somecode_roundtrip_string_option (Some "foo"))
+        let open Ocaml_somecode in 
+	assert_equal None (somecode_roundtrip_int_option None)
+      ; assert_equal (Some 1) (somecode_roundtrip_int_option (Some 1))
+      ; assert_equal None (somecode_roundtrip_string_option None)
+      ; assert_equal (Some "foo") (somecode_roundtrip_string_option (Some "foo"))
+      ; assert_equal ST0.{b=true;uc='a'} (somecode_roundtrip_ST0_t ST0.{b=true;uc='a'})
       )
   ]
   
