@@ -57,7 +57,7 @@ void ml2c(sentinel_GENERIC unused, value v, std::string *cv) {
 }
 
 template<class T, class U, typename ML_T, typename ML_U>
-value c2ml(ML_T unused1, ML_U unused2, const T& t, const U& u) {
+value c2ml(ML_T unused1, ML_U unused2, T& t, U& u) {
   CAMLparam0() ;
   CAMLlocal1(mlv) ;
   mlv = caml_alloc_tuple(2) ;
@@ -66,7 +66,7 @@ value c2ml(ML_T unused1, ML_U unused2, const T& t, const U& u) {
   CAMLreturn(mlv) ;
 }
 template<typename T, typename U, typename ML_T, typename ML_U>
-value c2ml(sentinel_TUPLE2<ML_T, ML_U> unused, const std::tuple<T, U>& v) {
+value c2ml(sentinel_TUPLE2<ML_T, ML_U> unused, std::tuple<T, U>& v) {
   return c2ml(ML_T(), ML_U(), std::get<0>(v), std::get<1>(v)) ;
 }
 
@@ -83,7 +83,7 @@ template<class T, class U, class V,
 	 typename ML_U,
 	 typename ML_V
         >
-value c2ml(ML_T unusedt, ML_U unusedu, ML_V unusedv, const T& t, const U& u, const V& v) {
+value c2ml(ML_T unusedt, ML_U unusedu, ML_V unusedv, T& t, U& u, V& v) {
   CAMLparam0() ;
   CAMLlocal1(mlv) ;
   mlv = caml_alloc_tuple(3) ;
@@ -97,7 +97,7 @@ template<class T, class U, class V,
 	 typename ML_U,
 	 typename ML_V
         >
-value c2ml(sentinel_TUPLE3<ML_T, ML_U, ML_V> unused, const std::tuple<T, U, V>& v) {
+value c2ml(sentinel_TUPLE3<ML_T, ML_U, ML_V> unused, std::tuple<T, U, V>& v) {
   return c2ml(ML_T(), ML_U(), ML_V(), std::get<0>(v), std::get<1>(v), std::get<2>(v)) ;
 }
 
@@ -115,7 +115,7 @@ void ml2c(sentinel_TUPLE3<ML_T, ML_U, ML_V> unused, value v, std::tuple<T, U, V>
 }
 
 template<class T, typename ML_T>
-value c2ml(sentinel_ARRAY<ML_T> unused, const std::vector<T>& v) {
+value c2ml(sentinel_ARRAY<ML_T> unused, std::vector<T>& v) {
   CAMLparam0() ;
   CAMLlocal1(mlv) ;
   mlv = caml_alloc(v.size(), 0) ;
@@ -140,7 +140,7 @@ void ml2c(sentinel_ARRAY<ML_T> unused, value v, std::vector<T>* cv) {
 }
 
 template <class T, typename ML_T>
-value c2ml(sentinel_OPTION<ML_T> unused, const std::optional<T>& ssp) {
+value c2ml(sentinel_OPTION<ML_T> unused, std::optional<T>& ssp) {
     CAMLparam0() ;
     CAMLlocal1 (v) ;
     if (! ssp.has_value()) {
