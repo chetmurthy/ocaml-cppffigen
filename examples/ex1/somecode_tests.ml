@@ -39,6 +39,8 @@ let all = "all_tests" >:::
       ; assert_equal None (somecode_roundtrip_string_option None)
       ; assert_equal (Some "foo") (somecode_roundtrip_string_option (Some "foo"))
       ; assert_equal ST0.{b=true;uc='a'} (somecode_roundtrip_ST0_t ST0.{b=true;uc='a'})
+      ; let st = ST.{ b = true ;	uc = 'a' ; n = 1 ; nL = 1L ; s = "foo" ; sz = 0xdeadbeefdeadbeefL } in
+        assert_equal st (somecode_roundtrip_ST_t st)
       )
   ]
   
