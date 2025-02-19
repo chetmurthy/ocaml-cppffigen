@@ -1,4 +1,5 @@
 (**pp -syntax camlp5o -package pa_ppx_fmtformat*)
+open Pa_ppx_utils
 open Sexplib
 open Sexplib.Std
 
@@ -9,7 +10,21 @@ let push l x = (l := x :: !l)
 
 let version = "0.003"
 
+module CPPID = struct
+type t = CPPID of string
+let pp pps (CPPID s) = Fmt.(pf pps "%s" s)
+let show cppid = Fmt.(str "%a" pp cppid)
+let mk s = CPPID s
+
+let t_of_sexp = function
+    (Sexp.Atom s) -> CPPID s
+  | _ -> failwith "CPPID.t_of_sexp"
+
+let sexp_of_t (CPPID s) = (Sexp.Atom s)
+end
+
 module CPPTYPE = struct
+
 type primtype =
   | INT | UINT
   | INT64 | UINT64
@@ -21,12 +36,26 @@ type primtype =
 
 type t =
     PTR of t
-  | ID of string
+  | ID of CPPID.t
   | TYCON of string * t list
   | PRIM of primtype [@@deriving sexp]
 end
 
+module MLID = struct
+type t = MLID of string
+let pp pps (MLID s) = Fmt.(pf pps "%s" s)
+let show mlid = Fmt.(str "%a" pp mlid)
+let mk s = MLID s
+
+let t_of_sexp = function
+    (Sexp.Atom s) -> MLID s
+  | _ -> failwith "MLID.t_of_sexp"
+
+let sexp_of_t (MLID s) = (Sexp.Atom s)
+end
+
 module MLTYPE = struct
+
   type concrete_type =
     INT
   | INT32
@@ -38,7 +67,7 @@ module MLTYPE = struct
   | ARRAY of concrete_type
   | TUPLE of concrete_type list
   | OPTION of concrete_type
-  | OTHER of string [@@deriving sexp]
+  | OTHER of MLID.t [@@deriving sexp]
 
   let tuple_type pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string " * ") pp1) l)
 
@@ -54,14 +83,14 @@ module MLTYPE = struct
     | ARRAY ty -> {%fmt_pf|(${ty | crec} array)|} pps
     | TUPLE l -> {%fmt_pf|(${l | tuple_type crec})|} pps
     | OPTION ty -> {%fmt_pf|(${ty | crec} option)|} pps
-    | OTHER s -> {%fmt_pf|(${s |%s})|} pps
+    | OTHER s -> {%fmt_pf|(${s | MLID.pp})|} pps
     in {%fmt_pf|$(cty | crec)|} pps
 
 type t =
   | ABSTRACT of string
   | CONCRETE of concrete_type [@@deriving sexp]
 
-let to_mlstring = function
+let ppml = function
     ABSTRACT s -> s
   | CONCRETE cty -> {%fmt_str|$(cty | ppml_concrete)|}
 
@@ -107,10 +136,10 @@ type stanza_t =
 
 let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
     [FOREIGN([], {%fmt_str|$(fprefix)$(target)_set_$(aname)|},
-	     [(ID target), "rcvr"; cpptype, aname],
+	     [(ID (CPPID.mk target)), "rcvr"; cpptype, aname],
 	     {%fmt_str|rcvr->${aname} = ${aname}|}) ;
      FOREIGN([cpptype], {%fmt_str|${fprefix}${target}_get_${aname}|},
-	     [(ID target), "rcvr"], {%fmt_str|_res0 = rcvr->$(aname);|})
+	     [(ID (CPPID.mk target)), "rcvr"], {%fmt_str|_res0 = rcvr->$(aname);|})
   ]
 
 let prim2mltype = function
@@ -120,74 +149,108 @@ let prim2mltype = function
   | (CHAR | UCHAR) -> MLTYPE.CHAR
   | BOOL -> MLTYPE.BOOL
   | STRING -> MLTYPE.STRING
+
 module TMAP = struct
   type entry_t = {
       stanza : stanza_t
-    ; id : string
+    ; mlid : MLID.t
+    ; cppid : CPPID.t
     ; cpptype : CPPTYPE.t
     ; mltype : MLTYPE.t
     ; concretetype : MLTYPE.concrete_type
     }
-  type t = (string * entry_t) list
+  type t = {
+      mlid_map : (MLID.t * entry_t) list
+    ; cppid_map : (CPPID.t * entry_t) list
+    ; entries : entry_t list
+    }
 
-  let typedef_to_entry tmap = function
+  let typedef_to_entry = function
       (TYPEDEF t) as stanza ->
-       if List.mem_assoc t.name tmap then
-         failwith {%fmt_str|typename $(t.name) already previously typedef-ed|} ;
-       { id = t.name
+       { mlid = MLID.mk t.name
+       ; cppid = CPPID.mk t.name
        ; cpptype = t.cpptype
        ; mltype = t.mltype
        ; stanza
        ; concretetype =
            match t.mltype with
              MLTYPE.CONCRETE t -> t
-           | ABSTRACT s -> MLTYPE.OTHER s
+           | ABSTRACT s -> MLTYPE.OTHER (MLID.mk s)
        }
 
-  let struct_to_entry tmap = function
+  let struct_to_entry = function
       (STRUCT t) as stanza ->
-       if List.mem_assoc t.Struct.name tmap then
-         failwith {%fmt_str|struct name $(t.Struct.name) already previously typedef-ed|} ;
-       let concretetype = MLTYPE.OTHER {%fmt_str|$(t.Struct.modname).t|} in
+       let mlid = MLID.mk {%fmt_str|$(t.Struct.modname).$(t.Struct.name)|} in
+       let cppid = CPPID.mk {%fmt_str|$(t.Struct.modname)_$(t.Struct.name)|} in
+       let concretetype = MLTYPE.OTHER mlid in
        {
-         id = t.Struct.name
-       ; cpptype = CPPTYPE.ID t.Struct.name
+         mlid
+       ; cppid
+       ; cpptype = CPPTYPE.ID cppid
        ; mltype = MLTYPE.CONCRETE concretetype
        ; concretetype
        ; stanza
        }
 
   let mk t =
-    let rec mkrec tmap = function
-        [] -> tmap
-      | h::t ->
-         match h with
-           STRUCT _ ->
-            let e = struct_to_entry tmap h in
-            mkrec ((e.id, e)::tmap) t
-         | TYPEDEF _ ->
-            let e = typedef_to_entry tmap h in
-            mkrec ((e.id, e)::tmap) t
-         | _ -> mkrec tmap t
-    in
-    mkrec [] t
+    let entries =
+      t
+      |> List.filter_map (function
+               STRUCT _ as h -> Some(struct_to_entry h)
+             | TYPEDEF _ as h -> Some(typedef_to_entry h)
+             | _ -> None
+           ) in
+    let mlid_map = List.map (fun e -> (e.mlid, e)) entries in
+    let cppid_map = List.map (fun e -> (e.cppid, e)) entries in
 
-  let lookup tmap s =
-    match List.assoc s tmap with
+    let mlids = List.map (fun e -> e.mlid) entries in
+    let cppids = List.map (fun e -> e.cppid) entries in
+    let repeated_mlids = Std2.hash_list_repeats mlids in
+    if [] <> repeated_mlids then
+      failwith {%fmt_str|TMAP.mk: repeated ML typeids (in structs/typedefs): [$(|repeated_mlids | list ~sep:(const string " ") MLID.pp|)]|} ;
+    let repeated_cppids = Std2.hash_list_repeats cppids in
+    if [] <> repeated_mlids then
+      failwith {%fmt_str|TMAP.mk: repeated C++ typeids (in structs/typedefs): [$(|repeated_cppids | list ~sep:(const string " ") CPPID.pp|)]|} ;
+    
+    { mlid_map ; cppid_map ; entries }
+
+  let lookup_mlid tmap s =
+    match List.assoc s tmap.mlid_map with
       e -> e
     | exception Not_found ->
-       failwith {%fmt_str|id $(s) not found in type-map|}
+       failwith {%fmt_str|ML id $(s|MLID.pp) not found in type-map|}
+
+  let lookup_cppid tmap s =
+    match List.assoc s tmap.cppid_map with
+      e -> e
+    | exception Not_found ->
+       failwith {%fmt_str|++ id $(s|CPPID.pp) not found in type-map|}
+
+  let mem_mlid tmap s = List.mem_assoc s tmap.mlid_map
+  let mem_cppid tmap s = List.mem_assoc s tmap.cppid_map
+
+  let entries tmap = tmap.entries
+
+  let typedefs tmap =
+    tmap.entries |> List.filter_map (function
+                          {stanza=TYPEDEF _} as e -> Some e
+                        | _ -> None)
+
+  let structs tmap =
+    tmap.entries |> List.filter_map (function
+                          {stanza=STRUCT _} as e -> Some e
+                        | _ -> None)
 
 end
 
-let ctype2concretetype tmap cty : MLTYPE.concrete_type =
+let ctype2concretetype (tmap : TMAP.t) cty : MLTYPE.concrete_type =
   let rec crec = function
     | CPPTYPE.PRIM t -> prim2mltype t
-    | ID "std::string" -> MLTYPE.STRING
+    | ID (CPPID.CPPID "std::string") -> MLTYPE.STRING
     | ID s -> begin
-      if not (List.mem_assoc s tmap) then
-	failwith {%fmt_str|typename $(s) not found in map|} ;
-      (List.assoc s tmap).TMAP.concretetype
+      if not (TMAP.mem_cppid tmap s) then
+	failwith {%fmt_str|typename $(s|CPPID.pp) not found in map|} ;
+      (TMAP.lookup_cppid tmap s).TMAP.concretetype
     end
     | TYCON("std::vector",[cty]) -> MLTYPE.(ARRAY (crec cty))
     | TYCON("std::tuple",[a;b]) -> MLTYPE.(TUPLE [crec a; crec b])
@@ -213,7 +276,7 @@ let comma_separated pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string ", ") 
 
 let ppcpp_cpptype pps ty =
   let rec frec pps = function
-    | CPPTYPE.ID s -> {%fmt_pf|$(s)|} pps
+    | CPPTYPE.ID s -> {%fmt_pf|$(s|CPPID.pp)|} pps
     | PTR t -> {%fmt_pf|$(t | frec)*|} pps
     | TYCON (s, l) ->
        {%fmt_pf|$(s)< $(l | comma_separated frec) >|} pps
@@ -234,7 +297,11 @@ let concretetype_to_sentineltype tmap mlty =
   | TUPLE [t1;t2;t3] -> {%fmt_pf|sentinel_TUPLE3<$(t1 | convrec),$(t2 | convrec),$(t3 | convrec)>|} pps
   | TUPLE _ -> failwith "mltype_to_sentineltype(tuple length > 2): unimplemented"
   | OPTION ty -> {%fmt_pf|sentinel_OPTION<$(ty | convrec)>|} pps
-  | OTHER id -> convrec pps (TMAP.lookup tmap id).TMAP.concretetype
+  | OTHER id ->
+     let e = TMAP.lookup_mlid tmap id in
+     match e.TMAP.stanza with
+       STRUCT _ -> {%fmt_pf|sentinel_GENERIC|} pps
+     | TYPEDEF _ ->  convrec pps e.TMAP.concretetype
   in
   {%fmt_str|$(mlty | convrec)|}
 
@@ -243,6 +310,8 @@ let pp_ml_field_decl tmap pps (cty,n) = {%fmt_pf|$(n) : $(ctype2concretetype tma
 let pp_cpp_field_decl pps (cty, n) = {%fmt_pf|  $(cty | ppcpp_cpptype) $(n) ;|} pps
 
 let expand_struct tmap { Struct.modname; name ; members } =
+  let cppid = CPPID.mk {%fmt_str|$(modname)_$(name)|} in
+  let mlid = MLID.mk {%fmt_str|$(modname).$(name)|} in
   [
     ML(PROLOGUE,
        {%fmt_str|
@@ -262,23 +331,23 @@ end
       ) ;
     CPP(PROLOGUE,
 	{%fmt_str|
-#ifndef $(name)_t_DEFINED
-#define $(name)_t_DEFINED
-struct $(name)_t {
+#ifndef $(modname)_$(name)_DEFINED
+#define $(modname)_$(name)_DEFINED
+struct $(modname)_$(name) {
 ${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }} ;
 #endif
 |}
       ) ;
     TYPEDEF {
       name ;
-      cpptype = ID(Printf.sprintf "struct %s_t" name) ;
-      mltype = CONCRETE(OTHER (Printf.sprintf "%s.t" modname)) ;
+      cpptype = ID cppid ;
+      mltype = CONCRETE(OTHER mlid) ;
     } ;
-    ML2CPP(ID name,
+    ML2CPP(ID cppid,
 	   String.concat "\n  "
 	     (List.mapi (fun i (cty, n) ->
 	       Printf.sprintf "ml2c(Field(_mlvalue,%d), &(_cvaluep->%s));" i n) members)) ;
-    CPP2ML(ID name,
+    CPP2ML(ID cppid,
 	   Printf.sprintf "
   _mlvalue = caml_alloc(%d, 0) ;
 %s
@@ -436,15 +505,15 @@ let epilogues t =
   | ML(EPILOGUE, s) -> [s]
   | _ -> []) t.stanzas)
 
-let pp_typedecl pps (lid, e) =
-  match e.TMAP.mltype with
-  | MLTYPE.CONCRETE s ->  {%fmt_pf|$(lid) = $(s | MLTYPE.ppml_concrete)|} pps
+let pp_typedecl pps e =
+  let open TMAP in
+  match e.mltype with
+  | MLTYPE.CONCRETE s ->  {%fmt_pf|$(e.mlid | MLID.pp) = $(s | MLTYPE.ppml_concrete)|} pps
   | ABSTRACT s ->  {%fmt_pf|$(s)|} pps
 
 let gen_typedecls ~ml pps tmap =
-  let l = tmap in
   {%fmt_pf| ${ if ml then "module Types = struct\n" else "module Types : sig\n" }
-  type ${l | list ~sep:(const string "\nand ") pp_typedecl}
+  type ${TMAP.typedefs tmap | list ~sep:(const string "\nand ") pp_typedecl}
   end
 |} pps
 
@@ -471,7 +540,7 @@ let gen_stanza tmap pps = function
           ="$(name)"
 |} pps
 
-let gen tmap pps t =
+let gen (tmap : TMAP.t) pps t =
   {%fmt_pf|
   ${ prologues t | list ~sep:(const string "") string }
   ${ tmap | gen_typedecls ~ml:true }

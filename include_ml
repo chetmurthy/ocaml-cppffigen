@@ -20,7 +20,7 @@ open Cppffigen_main ;;
 
 "examples/ex1/somecode-ffi.idl" |>  Fpath.v |> Bos.OS.File.read |> Result.get_ok |> Sexplib.Sexp.of_string |> Cppffigen.t_of_sexp;;
 
-gen_f (open_in "examples/ex1/somecode-ffi.idl") stdout `CPP ;;
+gen_f (open_in "examples/ex1/somecode-ffi.idl") Format.std_formatter `CPP ;;
 
 (*
 ;;; Local Variables: ***

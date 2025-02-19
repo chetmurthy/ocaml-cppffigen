@@ -29,82 +29,82 @@ let print_status st =
       name = "triple" ;
       members = [
 	(PRIM INT, "a") ;
-	(ID "std::string", "b") ;
+	(ID (CPPID.mk "std::string"), "b") ;
 	(TYCON("std::vector", [PRIM BOOL]), "c") ;
       ];
     };
     TYPEDEF{
       name="status";
-      cpptype=ID"rocksdb::Status";
-      mltype=MLTYPE.CONCRETE (OTHER "status_t");
+      cpptype=ID(CPPID.mk "rocksdb::Status");
+      mltype=MLTYPE.CONCRETE (OTHER (MLID.mk "status_t"));
     };
     TYPEDEF{
       name="cfhandle_id";
-      cpptype=PTR(ID"rocksdb::ColumnFamilyHandle") ;
+      cpptype=PTR(ID(CPPID.mk "rocksdb::ColumnFamilyHandle")) ;
       mltype= MLTYPE.ABSTRACT "cfhandle_id";
     } ;
-    CPP2ML(ID"cfhandle_id",
+    CPP2ML(ID(CPPID.mk "cfhandle_id"),
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
-    ML2CPP(ID"cfhandle_id",
+    ML2CPP(ID(CPPID.mk "cfhandle_id"),
 	   "ml2c_owned_pointer(_mlvalue, _cvaluep);");
 
     TYPEDEF{
       name="db_id";
-      cpptype=PTR(ID"rocksdb::DB") ;
+      cpptype=PTR(ID(CPPID.mk "rocksdb::DB")) ;
       mltype= MLTYPE.ABSTRACT "db_id";
     } ;
-    CPP2ML(ID"db_id",
+    CPP2ML(ID(CPPID.mk "db_id"),
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
-    ML2CPP(ID"db_id",
+    ML2CPP(ID(CPPID.mk "db_id"),
 	   "ml2c_owned_pointer(_mlvalue, _cvaluep);") ;
 
     TYPEDEF{
       name="dboptions_id";
-      cpptype=PTR(ID"rocksdb::DBOptions") ;
+      cpptype=PTR(ID(CPPID.mk "rocksdb::DBOptions")) ;
       mltype= MLTYPE.ABSTRACT "dboptions_id";
     } ;
-    CPP2ML(ID"dboptions_id",
+    CPP2ML(ID(CPPID.mk "dboptions_id"),
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
-    ML2CPP(ID"dboptions_id",
+    ML2CPP(ID(CPPID.mk "dboptions_id"),
 	   "ml2c_owned_pointer(_mlvalue, _cvaluep);") ;
 
     ATTRIBUTE Attribute.{
       target = "dbooptions_id" ;
       aname = "create_if_missing" ;
       fprefix = "rocksdb_" ;
-      cpptype = ID "bool" ;
+      cpptype = ID (CPPID.mk "bool") ;
     } ;
     TYPEDEF{
       name="cfoptions_id";
-      cpptype=PTR(ID"rocksdb::ColumnFamilyOptions") ;
+      cpptype=PTR(ID(CPPID.mk "rocksdb::ColumnFamilyOptions")) ;
       mltype= MLTYPE.ABSTRACT "cfoptions_id";
     } ;
-    CPP2ML(ID"cfoptions_id",
+    CPP2ML(ID(CPPID.mk "cfoptions_id"),
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
-    ML2CPP(ID"cfoptions_id",
+    ML2CPP(ID(CPPID.mk "cfoptions_id"),
 	   "ml2c_owned_pointer(_mlvalue, _cvaluep);") ;
 
     TYPEDEF{
       name="cfdescriptor_id";
-      cpptype=PTR(ID"rocksdb::ColumnFamilyDescriptor") ;
+      cpptype=PTR(ID(CPPID.mk "rocksdb::ColumnFamilyDescriptor")) ;
       mltype= MLTYPE.ABSTRACT "cfdescriptor_id";
     } ;
-    CPP2ML(ID"cfdescriptor_id",
+    CPP2ML(ID(CPPID.mk "cfdescriptor_id"),
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
-    ML2CPP(ID"cfdescriptor_id",
+    ML2CPP(ID(CPPID.mk "cfdescriptor_id"),
 	   "ml2c_owned_pointer(_mlvalue, _cvaluep);") ;
 
     TYPEDEF{
       name="comparator_id";
-      cpptype=PTR(ID"rocksdb::Comparator") ;
+      cpptype=PTR(ID(CPPID.mk "rocksdb::Comparator")) ;
       mltype=MLTYPE.ABSTRACT "comparator_id";
     } ;
-    CPP2ML(ID"comparator_id",
+    CPP2ML(ID(CPPID.mk "comparator_id"),
 	   "_mlvalue = c2ml_owned_pointer(_cvalue);") ;
-    ML2CPP(ID"comparator_id",
+    ML2CPP(ID(CPPID.mk "comparator_id"),
 	   "ml2c_owned_pointer(_mlvalue, _cvaluep);") ;
 
-    ML2CPP(ID"rocksdb::ColumnFamilyDescriptor",
+    ML2CPP(ID(CPPID.mk "rocksdb::ColumnFamilyDescriptor"),
 	   "cfdescriptor_id cfd_id ;
   ml2c(_mlvalue, &cfd_id) ;
   *_cvaluep = *cfd_id ;") ;
@@ -123,13 +123,13 @@ std::string demarsh_state(const char *state) {
   assert(NULL != _cvalue.it) ;
   _mlvalue = c2ml(demarsh_state(_cvalue.it)) ;
 ") ;
-    CPP2ML(ID"rocksdb::Status",
+    CPP2ML(ID(CPPID.mk "rocksdb::Status"),
 	   "
   OptWrap<char> w(_cvalue.getState()) ;
   _mlvalue = c2ml(_cvalue.code(), _cvalue.subcode(), w.p()) ;
 ") ;
 
-    FOREIGN([ID"cfoptions_id"],
+    FOREIGN([ID(CPPID.mk "cfoptions_id")],
 	    "rocksdb_cfoptions_create",
 	    [],
 	    "
@@ -138,12 +138,12 @@ std::string demarsh_state(const char *state) {
 
     FOREIGN([],
 	    "rocksdb_cfoptions_destroy",
-	    [ID"cfoptions_id","opth"],
+	    [ID(CPPID.mk "cfoptions_id"),"opth"],
 	    "
     delete opth ;
 ") ;
 
-    FOREIGN([ID"dboptions_id"],
+    FOREIGN([ID(CPPID.mk "dboptions_id")],
 	    "rocksdb_dboptions_create",
 	    [],
 	    "
@@ -152,15 +152,15 @@ std::string demarsh_state(const char *state) {
 
     FOREIGN([],
 	    "rocksdb_dboptions_destroy",
-	    [ID"dboptions_id","opth"],
+	    [ID(CPPID.mk "dboptions_id"),"opth"],
 	    "
     delete opth ;
 ") ;
 
-    FOREIGN([ID"status"; TYCON("std::vector", [ID"std::string"])],
+    FOREIGN([ID(CPPID.mk "status"); TYCON("std::vector", [ID(CPPID.mk "std::string")])],
 	    "rocksdb_list_column_families",
-	    [ID"dboptions_id", "opth";
-	     ID"std::string","name"],
+	    [ID(CPPID.mk "dboptions_id"), "opth";
+	     ID(CPPID.mk "std::string"),"name"],
 	    "
   _res0 = rocksdb::DB::ListColumnFamilies(*opth, name, &_res1);
   if (!_res0.ok()) _res1.clear() ;

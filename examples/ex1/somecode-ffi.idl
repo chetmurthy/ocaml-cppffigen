@@ -81,6 +81,20 @@
     (((PRIM INT) n))
      "_res0 = somecode::wal_recovery_mode_from_int(n); ")
 
+    (STRUCT
+     ((modname ST)
+      (name t)
+      (members
+       (
+	((PRIM BOOL) b)
+	((PRIM UCHAR) uc)
+;	((PRIM INT) n)
+;	((PRIM UINT64) nL)
+;	((ID std::string) s)
+;	((ID size_t) sz)
+	))))
+
+
    )
   )
  )
