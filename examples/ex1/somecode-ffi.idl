@@ -18,6 +18,11 @@
    (cpptype (ID size_t))
    (name size_t)))
  
+  (TYPEDEF
+   ((mltype (CONCRETE INT64))
+   (cpptype (ID int))
+   (name shortint_t)))
+
    (FOREIGN
     ((ID std::string))
     somecode_foo
@@ -70,10 +75,10 @@
   (TYPEDEF
    ((mltype (CONCRETE CHAR)) (cpptype (ID somecode::WALRecoveryMode)) (name wal_recovery_mode_t)))
 
- (CPP2ML (ID wal_recovery_mode_t) "sentinel_INT s0;
-   _mlvalue = c2ml(s0,static_cast<int>(_cvalue));")
-  (ML2CPP (ID wal_recovery_mode_t) "{ sentinel_INT _s0;
-   char xx ; ml2c(_s0, _mlvalue, &xx); *_cvaluep = static_cast<somecode::WALRecoveryMode>(xx) ; }")
+ (CPP2ML (ID wal_recovery_mode_t)
+  "_mlvalue = c2ml(sentinel_INT(),static_cast<int>(_cvalue));")
+ (ML2CPP (ID wal_recovery_mode_t)
+  "{ char xx ; ml2c(sentinel_INT(), _mlvalue, &xx); *_cvaluep = static_cast<somecode::WALRecoveryMode>(xx) ; }")
 
    (FOREIGN
     ((ID wal_recovery_mode_t))
