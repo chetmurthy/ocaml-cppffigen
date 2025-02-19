@@ -17,11 +17,6 @@
    ((mltype (CONCRETE INT64))
    (cpptype (ID size_t))
    (name size_t)))
- 
-  (TYPEDEF
-   ((mltype (CONCRETE INT64))
-   (cpptype (ID int))
-   (name shortint_t)))
 
    (FOREIGN
     ((ID std::string))
@@ -120,8 +115,6 @@
      (((ID ST_t) st))
      " _res0 = st ;"
      )
-
-
 
    )
   )
