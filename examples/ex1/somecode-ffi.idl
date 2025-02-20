@@ -43,9 +43,9 @@
      "_res0 = somecode::roundtrip_int_option(n); ")
 
     (FOREIGN
-     ((TYCON std::optional ((PRIM STRING))))
+     ((TYCON std::optional ((ID std::string))))
      somecode_roundtrip_string_option
-     (((TYCON std::optional ((PRIM STRING))) n))
+     (((TYCON std::optional ((ID std::string))) n))
      "_res0 = somecode::roundtrip_string_option(n); ")
 
    (FOREIGN

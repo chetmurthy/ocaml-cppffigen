@@ -46,7 +46,6 @@ type primtype =
   | INT32 | UINT32
   | CHAR | UCHAR
   | BOOL
-  | STRING
       [@@deriving sexp, show]
 
 type t =
@@ -163,7 +162,6 @@ let prim2mltype = function
   | (INT32 | UINT32) -> MLTYPE.INT32
   | (CHAR | UCHAR) -> MLTYPE.CHAR
   | BOOL -> MLTYPE.BOOL
-  | STRING -> MLTYPE.STRING
 
 module TMAP = struct
   type entry_t = {
@@ -285,7 +283,6 @@ let fmt_primcpptype = function
   | CHAR -> "char"
   | UCHAR -> "unsigned char"
   | BOOL -> "bool"
-  | STRING -> "std::string"
   
 let comma_separated pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string ", ") pp1) l)
 
