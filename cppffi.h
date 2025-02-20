@@ -33,9 +33,6 @@ void ml2c_owned_pointer(const value v, T *cv) ;
 template<class T>
 void ml2c_set_owned_pointer(value v, T cv) ;
 
-//template<class T>
-//value c2ml_opt_owned_pointer(const T *& p) ;
-
 value c2ml(sentinel_INT unused, int v) ;
 value c2ml(sentinel_INT unused, unsigned int v) ;
 value c2ml(sentinel_INT unused, bool v) ;
@@ -75,7 +72,7 @@ template<class T, class U, class V,
 	 typename ML_U,
 	 typename ML_V
         >
-value c2ml(ML_T unusedt, ML_U unusedu, ML_V unusedv, T t, U& u, V& v);
+value c2ml(ML_T unusedt, ML_U unusedu, ML_V unusedv, T& t, U& u, V& v);
 
 template<class T, class U, class V,
 	 typename ML_T,
