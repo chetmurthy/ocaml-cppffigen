@@ -132,6 +132,29 @@
      (((ID short_t) n))
      "_res0 = n; ")
 
+   (TYPEDEF
+    ((mltype (ABSTRACT stt_id))
+     (cpptype (PTR (ID ST_t))) 
+     (name stt_id)))
+   (ML2CPP (ID stt_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
+
+    (FOREIGN
+     ((TYCON std::optional ((ID stt_id))))
+     somecode_stt_make
+     ()
+     "_res0 = std::optional(new ST_t()); ")
+
+    (FOREIGN
+     ()
+     somecode_stt_set_b
+     (((ID stt_id) sth) ((PRIM BOOL) b))
+     "sth->b = b; ")
+
+    (FOREIGN
+     ((PRIM BOOL))
+     somecode_stt_get_b
+     (((ID stt_id) sth))
+     "_res0 = sth->b; ")
 
    )
   )

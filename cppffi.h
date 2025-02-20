@@ -2,6 +2,7 @@
 #include <vector>
 #include <tuple>
 #include <optional>
+#include <cassert>
 
 #ifndef cppffigen_h_included
 #define  cppffigen_h_included

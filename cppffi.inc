@@ -164,3 +164,16 @@ void ml2c(sentinel_OPTION<ML_T>  unused, value v, std::optional<T>* cv) {
   }
   CAMLreturn0;
 }
+
+
+template <class T, typename ML_T>
+value c2ml(sentinel_OPTION<ML_T> unused, std::optional<T *>& ssp) {
+    CAMLparam0() ;
+    CAMLlocal1(v) ;
+    if (!ssp.has_value() || NULL == ssp.value()) {
+       CAMLreturn(Val_int(0)) ;       
+    }
+    v = caml_alloc_small(1, 0) ;
+    Field(v, 0) = c2ml_owned_pointer(ssp.value()) ;
+    CAMLreturn(v) ;
+}

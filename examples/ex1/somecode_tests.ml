@@ -44,6 +44,16 @@ let all = "all_tests" >:::
       ; assert_equal 1L (somecode_roundtrip_short_t 1L)
       ; assert_equal 0L (somecode_roundtrip_short_t 65536L)
       )
+  ; "somecode_ST.t" >::
+      (fun ctxt ->
+        let open Ocaml_somecode in 
+        let sth_opt = somecode_stt_make() in
+        assert_bool "was None" (None <> sth_opt) ;
+        let (Some sth) = sth_opt in
+        assert_equal false (somecode_stt_get_b sth)
+      ; assert_equal () (somecode_stt_set_b sth true)
+      ; assert_equal true (somecode_stt_get_b sth)
+      )
   ]
   
 (* Run the tests in test suite *)

@@ -316,6 +316,7 @@ let concretetype_to_sentineltype tmap mlty =
      let e = TMAP.lookup_mlid tmap id in
      match e.TMAP.stanza with
        STRUCT _ -> {%fmt_pf|sentinel_GENERIC|} pps
+     | TYPEDEF { mltype = ABSTRACT _ } -> {%fmt_pf|sentinel_GENERIC|} pps
      | TYPEDEF _ ->  convrec pps e.TMAP.concretetype
   in
   {%fmt_str|$(mlty | convrec)|}
@@ -436,7 +437,6 @@ let gen_stanza_bodies tmap pps = function
 |} pps
 
   | FOREIGN(rtys, fname, argformals, body) ->
-     assert (rtys <> []) ;
      let ml_rtyl = List.map (ctype2concretetype tmap) rtys in
      let converted_l = List.map (arg_snippets tmap) argformals in
      let argdecl_l = List.map fst converted_l in
@@ -455,6 +455,12 @@ let gen_stanza_bodies tmap pps = function
 
      let res_vars = List.mapi (fun i _ -> Printf.sprintf "_res%d" i) ml_rtyl in
      let sentinel_exprs = List.map (fun rty -> Printf.sprintf "%s()" (concretetype_to_sentineltype tmap rty)) ml_rtyl in
+     let res_assignment =
+       if ml_rtyl = [] then
+         Fmt.(const string "")
+       else
+         (fun pps () -> {%fmt_pf|_mlv_res = c2ml(${sentinel_exprs@res_vars | list ~sep:(const string ", ") string});|} pps) in
+
 
 {%fmt_pf|extern \"C\" value $(fname)(${argdecl_l | list ~sep:(const string ", ") string}) {
   CAMLparam${List.length argformals | %d}(${param_l | list ~sep:(const string ", ") string});
@@ -465,7 +471,7 @@ let gen_stanza_bodies tmap pps = function
   /* BODY */
   ${body}
   /* C->ML*/
-  _mlv_res = c2ml(${sentinel_exprs@res_vars | list ~sep:(const string ", ") string});
+  ${ () | res_assignment }
   CAMLreturn(_mlv_res) ;
 }
 |} pps
