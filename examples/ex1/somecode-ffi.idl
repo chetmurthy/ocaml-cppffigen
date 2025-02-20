@@ -144,17 +144,10 @@
      ()
      "_res0 = std::optional(new ST_t()); ")
 
-    (FOREIGN
-     ()
-     somecode_stt_set_b
-     (((ID stt_id) sth) ((PRIM BOOL) b))
-     "sth->b = b; ")
-
-    (FOREIGN
-     ((PRIM BOOL))
-     somecode_stt_get_b
-     (((ID stt_id) sth))
-     "_res0 = sth->b; ")
+   (ATTRIBUTE
+    ((target stt_id) (aname nL) (fprefix somecode_) (cpptype (PRIM UINT64))))
+   (ATTRIBUTE
+    ((target stt_id) (aname b) (fprefix somecode_) (cpptype (PRIM BOOL))))
 
    )
   )

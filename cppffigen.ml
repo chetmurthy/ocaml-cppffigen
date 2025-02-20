@@ -152,7 +152,7 @@ type stanza_t =
 let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
     [FOREIGN([], {%fmt_str|$(fprefix)$(target)_set_$(aname)|},
 	     [(ID (CPPID.mk target)), "rcvr"; cpptype, aname],
-	     {%fmt_str|rcvr->${aname} = ${aname}|}) ;
+	     {%fmt_str|rcvr->${aname} = ${aname};|}) ;
      FOREIGN([cpptype], {%fmt_str|${fprefix}${target}_get_${aname}|},
 	     [(ID (CPPID.mk target)), "rcvr"], {%fmt_str|_res0 = rcvr->$(aname);|})
   ]

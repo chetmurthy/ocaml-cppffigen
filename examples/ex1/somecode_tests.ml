@@ -50,9 +50,9 @@ let all = "all_tests" >:::
         let sth_opt = somecode_stt_make() in
         assert_bool "was None" (None <> sth_opt) ;
         let (Some sth) = sth_opt in
-        assert_equal false (somecode_stt_get_b sth)
-      ; assert_equal () (somecode_stt_set_b sth true)
-      ; assert_equal true (somecode_stt_get_b sth)
+        assert_equal false (somecode_stt_id_get_b sth)
+      ; assert_equal () (somecode_stt_id_set_b sth true)
+      ; assert_equal true (somecode_stt_id_get_b sth)
       )
   ]
   
