@@ -138,9 +138,20 @@
      (name stt_id)))
    (ML2CPP (ID stt_id) "ml2c_owned_pointer(_mlvalue, _cvaluep);")
 
+   (TYPEDEF
+    ((mltype (CONCRETE (OPTION (OTHER stt_id))))
+     (cpptype (TYCON std::optional ((ID stt_id))))
+     (name stt_id_opt)))
+
     (FOREIGN
      ((TYCON std::optional ((ID stt_id))))
      somecode_stt_make
+     ()
+     "_res0 = std::optional(new ST_t()); ")
+
+    (FOREIGN
+     ((ID stt_id_opt))
+     somecode_stt_make_2
      ()
      "_res0 = std::optional(new ST_t()); ")
 
