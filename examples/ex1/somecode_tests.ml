@@ -54,6 +54,11 @@ let all = "all_tests" >:::
       ; assert_equal () (somecode_stt_id_set_b sth true)
       ; assert_equal true (somecode_stt_id_get_b sth)
       )
+  ; "something" >::
+      (fun ctxt ->
+        let open Ocaml_somecode in 
+        assert_equal (10,"foo") (somecode_via_something 10 "foo")
+      )
   ]
   
 (* Run the tests in test suite *)

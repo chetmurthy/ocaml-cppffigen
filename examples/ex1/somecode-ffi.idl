@@ -13,6 +13,7 @@
 #include \"somecode.h\"
 #include \"cppffi.h\"
 ")
+
   (TYPEDEF
    ((mltype (CONCRETE INT64))
    (cpptype (ID size_t))
@@ -160,6 +161,23 @@
    (ATTRIBUTE
     ((target stt_id) (aname b) (fprefix somecode_) (cpptype (PRIM BOOL))))
 
+   (TYPEDEF
+    ((mltype (CONCRETE (TUPLE (INT STRING))))
+     (cpptype (ID somecode::something))
+     (name something)))
+
+  (CPP2ML (ID something)
+     "int n = _cvalue.n;
+      std::string s = _cvalue.s ;
+   _mlvalue = c2ml(sentinel_INT(), sentinel_GENERIC(), n, s) ;")
+
+   (FOREIGN
+    ((ID something))
+     somecode_via_something
+    (((PRIM INT) n) ((ID std::string) s))
+     "somecode::something st(n, s);
+      _res0 = st;
+")
    )
   )
  )

@@ -44,6 +44,13 @@ enum class WALRecoveryMode : char {
 WALRecoveryMode
 wal_recovery_mode_from_int(int n);
 
+struct something {
+  int n;
+  std::string s ;
+  something(int n, std::string s) : n(n), s(s) { }
+  something() {}
+} ;
+
 } // namespace somecode
 
 #endif
