@@ -1,4 +1,3 @@
-
 ocaml-cppffigen Version 0.003
 -----------------------------
 
@@ -6,6 +5,8 @@ ocaml-cppffigen Version 0.003
   * added a bunch more static typing to the generatd C++ code, in order to sure better automatic conversions
 
   * switched from ppx_sexp_conv to pa_ppx.deriving_plugins.sexp
+
+  * switched to using pa_ppx_fmtformat for generating code
 
   * removed dependency on pcre (why was it ever needed?)
 
