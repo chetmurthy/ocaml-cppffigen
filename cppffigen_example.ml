@@ -32,6 +32,7 @@ let print_status st =
 	(ID (CPPID.mk "std::string"), "b") ;
 	(TYCON("std::vector", [PRIM BOOL]), "c") ;
       ];
+      code = ""
     };
     TYPEDEF{
       name="status";

@@ -89,7 +89,9 @@
        (
 	((PRIM BOOL) b)
 	((PRIM UCHAR) uc)
-	))))
+	))
+      (code "")
+      ))
 
     (FOREIGN ((ID ST0_t))
      somecode_roundtrip_ST0_t
@@ -109,7 +111,9 @@
 	((PRIM UINT64) nL)
 	((ID std::string) s)
 	((ID size_t) sz)
-	))))
+	))
+      (code "ST_t() {}")
+      ))
 
     (FOREIGN ((ID ST_t))
      somecode_roundtrip_ST_t

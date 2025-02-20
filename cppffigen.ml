@@ -132,6 +132,7 @@ module Struct = struct
       modname : string ;
       name : string ;
       members : (CPPTYPE.t * string) list ;
+      code : string
     } [@@deriving sexp, show]
 end
 
@@ -322,7 +323,7 @@ let pp_ml_field_decl tmap pps (cty,n) = {%fmt_pf|$(n) : $(ctype2concretetype tma
 
 let pp_cpp_field_decl pps (cty, n) = {%fmt_pf|  $(cty | ppcpp_cpptype) $(n) ;|} pps
 
-let expand_struct tmap { Struct.modname; name ; members } =
+let expand_struct tmap { Struct.modname; name ; members ; code } =
   let cppid = CPPID.mk {%fmt_str|$(modname)_$(name)|} in
   let mlid = MLID.mk {%fmt_str|$(modname).$(name)|} in
   [
@@ -347,7 +348,9 @@ end
 #ifndef $(modname)_$(name)_DEFINED
 #define $(modname)_$(name)_DEFINED
 struct $(modname)_$(name) {
-${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }} ;
+${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }
+${ code }
+} ;
 #endif
 |}
       ) ;
