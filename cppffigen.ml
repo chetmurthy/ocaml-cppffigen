@@ -1,4 +1,4 @@
-(**pp -syntax camlp5o -package pa_ppx_fmtformat*)
+(**pp -syntax camlp5o -package pa_ppx_fmtformat,pa_ppx.deriving_plugins.std *)
 open Pa_ppx_utils
 open Sexplib
 open Sexplib.Std
@@ -26,7 +26,7 @@ let if_nil ~nil ~list (pps : Format.formatter) l : unit =
   else list pps l
 
 module CPPID = struct
-type t = CPPID of string
+type t = CPPID of string [@@deriving show]
 let pp pps (CPPID s) = Fmt.(pf pps "%s" s)
 let show cppid = Fmt.(str "%a" pp cppid)
 let mk s = CPPID s
@@ -47,17 +47,17 @@ type primtype =
   | CHAR | UCHAR
   | BOOL
   | STRING
-      [@@deriving sexp]
+      [@@deriving sexp, show]
 
 type t =
     PTR of t
   | ID of CPPID.t
   | TYCON of string * t list
-  | PRIM of primtype [@@deriving sexp]
+  | PRIM of primtype [@@deriving sexp, show]
 end
 
 module MLID = struct
-type t = MLID of string
+type t = MLID of string [@@deriving show]
 let pp pps (MLID s) = Fmt.(pf pps "%s" s)
 let show mlid = Fmt.(str "%a" pp mlid)
 let mk s = MLID s
@@ -82,7 +82,7 @@ module MLTYPE = struct
   | ARRAY of concrete_type
   | TUPLE of concrete_type list
   | OPTION of concrete_type
-  | OTHER of MLID.t [@@deriving sexp]
+  | OTHER of MLID.t [@@deriving sexp, show]
 
   let tuple_type pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string " * ") pp1) l)
 
@@ -103,7 +103,7 @@ module MLTYPE = struct
 
 type t =
   | ABSTRACT of string
-  | CONCRETE of concrete_type [@@deriving sexp]
+  | CONCRETE of concrete_type [@@deriving sexp, show]
 
 let ppml = function
     ABSTRACT s -> s
@@ -115,7 +115,7 @@ type def_t =
   { name : string ;
     mltype : MLTYPE.t ;
     cpptype : CPPTYPE.t ;
-  } [@@deriving sexp]
+  } [@@deriving sexp, show]
 
 module Attribute = struct
 type t =
@@ -124,7 +124,7 @@ type t =
     aname : string ;
     fprefix : string ;
     cpptype : CPPTYPE.t ;
-  } [@@deriving sexp]
+  } [@@deriving sexp, show]
 end
 
 module Struct = struct
@@ -133,10 +133,10 @@ module Struct = struct
       modname : string ;
       name : string ;
       members : (CPPTYPE.t * string) list ;
-    } [@@deriving sexp]
+    } [@@deriving sexp, show]
 end
 
-type loc = PROLOGUE | EPILOGUE | HERE [@@deriving sexp]
+type loc = PROLOGUE | EPILOGUE | HERE [@@deriving sexp,show]
 
 type stanza_t =
   | TYPEDEF of def_t
@@ -147,7 +147,7 @@ type stanza_t =
   | CPP of loc * string
   | ML of loc * string
   | MLI of loc * string
-  | FOREIGN of CPPTYPE.t list * string * (CPPTYPE.t * string) list * string [@@deriving sexp]
+  | FOREIGN of CPPTYPE.t list * string * (CPPTYPE.t * string) list * string [@@deriving sexp, show]
 
 let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
     [FOREIGN([], {%fmt_str|$(fprefix)$(target)_set_$(aname)|},
@@ -271,7 +271,7 @@ let ctype2concretetype (tmap : TMAP.t) cty : MLTYPE.concrete_type =
     | TYCON("std::tuple",[a;b]) -> MLTYPE.(TUPLE [crec a; crec b])
     | TYCON("std::tuple",l) -> MLTYPE.(TUPLE (List.map crec l))
     | TYCON("std::optional",[cty]) -> MLTYPE.(OPTION (crec cty))
-    | TYCON _ -> failwith "unrecognized C++ type-constructor"
+    | TYCON _ as t -> failwith {%fmt_str|unrecognized C++ type-constructor: ${ t | CPPTYPE.pp }|}
     | PTR _ -> failwith "cannot map a PTR type to an ML type (should use typedef)"
   in  crec cty
 
@@ -374,7 +374,7 @@ ${ members | list ~sep:(const string "\n\t") pp_cpp_field_decl }} ;
 
 type t = {
   stanzas : stanza_t  list;
-} [@@deriving sexp]
+} [@@deriving sexp, show]
 
 
 module CPP = struct
