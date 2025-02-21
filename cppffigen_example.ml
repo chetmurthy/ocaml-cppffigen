@@ -1,4 +1,4 @@
-
+open Pa_ppx_located_sexp
 open Cppffigen
 
 let t = {
@@ -172,6 +172,6 @@ std::string demarsh_state(const char *state) {
 let _ =
   Printexc.catch (fun () ->  
     if Sys.argv.(1) = "-dump-sexp" then
-      Sexplib.Sexp.output_hum stdout(sexp_of_t t)
+      Fmt.(pf stdout "%a@." Sexp.pp_hum (located_sexp_of_t t))
     else failwith "unrecognized argument")
     ()

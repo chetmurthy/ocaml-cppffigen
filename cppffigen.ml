@@ -1,7 +1,6 @@
-(**pp -syntax camlp5o -package pa_ppx_fmtformat,pa_ppx.deriving_plugins.std *)
+(**pp -syntax camlp5o -package pa_ppx_fmtformat,pa_ppx.located_sexp,pa_ppx.deriving_plugins.std,pa_ppx.deriving_plugins.located_sexp *)
 open Pa_ppx_utils
-open Sexplib
-open Sexplib.Std
+open Pa_ppx_located_sexp
 
 let version = "0.003"
 
@@ -31,11 +30,11 @@ let pp pps (CPPID s) = Fmt.(pf pps "%s" s)
 let show cppid = Fmt.(str "%a" pp cppid)
 let mk s = CPPID s
 
-let t_of_sexp = function
-    (Sexp.Atom s) -> CPPID s
+let t_of_located_sexp = function
+    Sexp.Atom(_, s) -> CPPID s
   | _ -> failwith "CPPID.t_of_sexp"
 
-let sexp_of_t (CPPID s) = (Sexp.Atom s)
+let located_sexp_of_t (CPPID s) = Sexp.Atom(Ploc.dummy, s)
 end
 
 module CPPTYPE = struct
@@ -46,13 +45,13 @@ type primtype =
   | INT32 | UINT32
   | CHAR | UCHAR
   | BOOL
-      [@@deriving sexp, show]
+      [@@deriving located_sexp, show]
 
 type t =
     PTR of t
   | ID of CPPID.t
   | TYCON of string * t list
-  | PRIM of primtype [@@deriving sexp, show]
+  | PRIM of primtype [@@deriving located_sexp, show]
 end
 
 module MLID = struct
@@ -61,11 +60,11 @@ let pp pps (MLID s) = Fmt.(pf pps "%s" s)
 let show mlid = Fmt.(str "%a" pp mlid)
 let mk s = MLID s
 
-let t_of_sexp = function
-    (Sexp.Atom s) -> MLID s
+let t_of_located_sexp = function
+    Sexp.Atom(_, s) -> MLID s
   | _ -> failwith "MLID.t_of_sexp"
 
-let sexp_of_t (MLID s) = (Sexp.Atom s)
+let located_sexp_of_t (MLID s) = Sexp.Atom(Ploc.dummy, s)
 end
 
 module MLTYPE = struct
@@ -81,7 +80,7 @@ module MLTYPE = struct
   | ARRAY of concrete_type
   | TUPLE of concrete_type list
   | OPTION of concrete_type
-  | OTHER of MLID.t [@@deriving sexp, show]
+  | OTHER of MLID.t [@@deriving located_sexp, show]
 
   let tuple_type pp1 pps l = Fmt.(pf pps "%a" (list ~sep:(const string " * ") pp1) l)
 
@@ -102,7 +101,7 @@ module MLTYPE = struct
 
 type t =
   | ABSTRACT of string
-  | CONCRETE of concrete_type [@@deriving sexp, show]
+  | CONCRETE of concrete_type [@@deriving located_sexp, show]
 
 let ppml = function
     ABSTRACT s -> s
@@ -114,7 +113,7 @@ type def_t =
   { name : string ;
     mltype : MLTYPE.t ;
     cpptype : CPPTYPE.t ;
-  } [@@deriving sexp, show]
+  } [@@deriving located_sexp, show]
 
 module Attribute = struct
 type t =
@@ -123,7 +122,7 @@ type t =
     aname : string ;
     fprefix : string ;
     cpptype : CPPTYPE.t ;
-  } [@@deriving sexp, show]
+  } [@@deriving located_sexp, show]
 end
 
 module Struct = struct
@@ -133,10 +132,10 @@ module Struct = struct
       name : string ;
       members : (CPPTYPE.t * string) list ;
       code : string
-    } [@@deriving sexp, show]
+    } [@@deriving located_sexp, show]
 end
 
-type loc = PROLOGUE | EPILOGUE | HERE [@@deriving sexp,show]
+type loc = PROLOGUE | EPILOGUE | HERE [@@deriving located_sexp,show]
 
 type stanza_t =
   | TYPEDEF of def_t
@@ -147,7 +146,7 @@ type stanza_t =
   | CPP of loc * string
   | ML of loc * string
   | MLI of loc * string
-  | FOREIGN of CPPTYPE.t list * string * (CPPTYPE.t * string) list * string [@@deriving sexp, show]
+  | FOREIGN of CPPTYPE.t list * string * (CPPTYPE.t * string) list * string [@@deriving located_sexp, show]
 
 let expand_attribute {Attribute.target ; aname ; fprefix ; cpptype } =
     [FOREIGN([], {%fmt_str|$(fprefix)$(target)_set_$(aname)|},
@@ -374,7 +373,7 @@ ${ code }
 
 type t = {
   stanzas : stanza_t  list;
-} [@@deriving sexp, show]
+} [@@deriving located_sexp, show]
 
 
 module CPP = struct

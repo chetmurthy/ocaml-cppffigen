@@ -1,6 +1,8 @@
-(**pp -syntax camlp5o -package pa_ppx_fmtformat*)
+(**pp -syntax camlp5o -package pa_ppx.located_sexp,pa_ppx_fmtformat*)
 open Cppffigen
 open Cmdliner
+open Pa_ppx_located_sexp
+
 
 let expand_composite tmap t =
   let expand1 = function
@@ -10,14 +12,14 @@ let expand_composite tmap t =
   { stanzas = List.concat (List.map expand1 t.stanzas) }
 
 let gen_f ic pps mode =
-  let t = t_of_sexp (Sexplib.Sexp.input_sexp ic) in
+  let t = t_of_located_sexp (Sexp.input_sexp ic) in
   let tmap = TMAP.mk t.stanzas in
   let t = expand_composite tmap t in
   match mode with
   | `CPP -> CPP.gen tmap pps t
   | `ML -> ML.gen tmap pps t
   | `MLI -> MLI.gen tmap pps t
-  | `SEXP -> Sexplib.Sexp.pp_hum pps (sexp_of_t t)
+  | `SEXP -> Sexp.pp_hum pps (located_sexp_of_t t)
 
 let opts_sect = "OPTIONS"
 

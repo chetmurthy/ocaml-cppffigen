@@ -1,5 +1,5 @@
 
-PACKAGES=camlp5,pa_ppx.deriving_plugins.sexp,sexplib,cmdliner,pa_ppx.utils
+PACKAGES=camlp5,pa_ppx.deriving_plugins.sexp,sexplib,cmdliner,pa_ppx.utils,pa_ppx.located_sexp
 SYNTAX=camlp5o
 
 OCAMLCFLAGS= -package $(PACKAGES) -syntax $(SYNTAX) -g
