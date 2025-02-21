@@ -3,6 +3,8 @@ open Cppffigen
 open Cmdliner
 open Pa_ppx_located_sexp
 
+Pa_ppx_runtime.Exceptions.Ploc.pp_loc_verbose := true ;;
+Pa_ppx_runtime_fat.Exceptions.Ploc.pp_loc_verbose := true ;;
 
 let expand_composite tmap t =
   let expand1 = function
